@@ -11,6 +11,7 @@ import (
 	"context"
 	"log"
 	"fmt"
+	//"encoding/json"
 )
 
 const(
@@ -18,57 +19,57 @@ const(
 )
 
 type plane struct {
-	modelo string `json:"modelo"`
-	numero_de_serie string `json:"numero_de_serie"`
-	stock_de_pasajeros int `json:"stock_de_pasajeros"`
+	modelo string `bson:"modelo"`
+	numero_de_serie string `bson:"numero_de_serie"`
+	stock_de_pasajeros int `bson:"stock_de_pasajeros"`
 }
 
 type ancillary struct {
-	nombre string `json:"nombre"`
-	stock int `json:"stock"`
-	ssr string `json:"ssr"`
+	nombre string `bson:"nombre"`
+	stock int `bson:"stock"`
+	ssr string `bson:"ssr"`
 }
 
 type passenger_ancillary struct{
-	DepartureFlight []ancillary `json:"departureFlight"`
-	ReturnFlight []ancillary `json:"returnFlight"`
+	DepartureFlight []ancillary `bson:"departureFlight"`
+	ReturnFlight []ancillary `bson:"returnFlight"`
 }
 
 type flight struct{
-	id primitive.ObjectID `json:"_id, omitempty"`
-	numero_vuelo string `json:"numero_vuelo"`
-	origen string `json:"origen"`
-	destino string `json:"destino"`
-	hora_salida string `json:"hora_salida"`
-	hora_llegada string `json:"hora_llegada"`
-	fecha string `json:"fecha"`
-	avion plane `json:"avion"`
-	ancillaries []ancillary `json:"ancillaries"`
+	id primitive.ObjectID `bson:"_id"`
+	numero_vuelo string `bson:"numero_vuelo"`
+	origen string `bson:"origen"`
+	destino string `bson:"destino"`
+	hora_salida string `bson:"hora_salida"`
+	hora_llegada string `bson:"hora_llegada"`
+	fecha string `bson:"fecha"`
+	avion plane `bson:"avion"`
+	ancillaries []ancillary `bson:"ancillaries"`
 }
 
 type balance struct{
-	AncillariesDepartureFlight int `json:"ancillariesDepartureFlight"`
-	DepartureFlight int `json:"departureFlight"`
-	AncillariesReturnFlight int `json:"ancillariesReturnFlight"`
-	ReturnFlight int `json:"returnFlight"`
+	AncillariesDepartureFlight int `bson:"ancillariesDepartureFlight"`
+	DepartureFlight int `bson:"departureFlight"`
+	AncillariesReturnFlight int `bson:"ancillariesReturnFlight"`
+	ReturnFlight int `bson:"returnFlight"`
 }
 
 type passenger struct{
-	FirstName string `json:"firstName"`
-	Surname string `json:"surname"`
-	Age int `json:"age"`
-	Ancillaries passenger_ancillary `json:"ancillaries"`
-	Balances balance `json:"balances"`
+	FirstName string `bson:"firstName"`
+	Surname string `bson:"surname"`
+	Age int `bson:"age"`
+	Ancillaries passenger_ancillary `bson:"ancillaries"`
+	Balances balance `bson:"balances"`
 }
 
 type reservation struct{
-	Flights []flight `json:"flights"`
-	Passengers []passenger `json:"passengers"`
+	Flights []flight `bson:"flights"`
+	Passengers []passenger `bson:"passengers"`
 }
 
 type reservationWithPNR struct{
-	Reservation reservation `json:"reservation"`
-	Pnr string `json:"pnr"`
+	Reservation reservation `bson:"reservation"`
+	Pnr string `bson:"pnr"`
 }
 
 type response struct{
@@ -146,6 +147,7 @@ func getFlight() gin.HandlerFunc{
 	return func(c *gin.Context){
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
         var singleFlight flight
         defer cancel()
 
