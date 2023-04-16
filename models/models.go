@@ -57,7 +57,7 @@ type PassengerAncillaryList struct {
 }
 
 // Define the Passengers struct, which represents a passenger who has booked a flight
-type Passengers struct {
+type Passenger struct {
 	Name        string                   `bson:"name"`
 	Apellido    string                   `bson:"apellido"`
 	Edad        int                      `bson:"edad"`
@@ -65,9 +65,11 @@ type Passengers struct {
 }
 
 // Define the Reservations struct, which represents a reservation made by one or more passengers for one or more flights
-type Reservations struct {
-	Vuelos     []Flight     `bson:"vuelos"`
-	Passengers []Passengers `bson:"pasajeros"`
+type Reservation struct {
+	PNR        string      `bson:"PNR"`
+	Apellido   string      `bson:"apellido"`
+	Vuelos     []Flight    `bson:"vuelos"`
+	Passengers []Passenger `bson:"pasajeros"`
 }
 
 // This function takes a JSON string as input and returns a pretty formatted JSON string with proper indentation
@@ -136,26 +138,27 @@ func GetVuelos() {
 
 // This function retrieves one document from the "vuelos" collection of the "aerolinea" database and stores it in a Flight struct
 
-func GetVuelo(id primitive.ObjectID) {
+func GetVuelo(origenVuelo string, destinoVuelo string, fechaVuelo string) (Flight, error) {
 
 	var vuelo Flight
 
 	collection := getDatabaseCollection("vuelos")
-	err := collection.FindOne(context.Background(), bson.M{"_id": id}).Decode(&vuelo)
+
+	err := collection.FindOne(context.Background(), bson.M{"origen": origenVuelo, "destino": destinoVuelo, "fecha": fechaVuelo}).Decode(&vuelo)
 	if err != nil {
 		// Handle the error
 		fmt.Println("Error retrieving document:", err)
-		return
 	}
 
+	return vuelo, err
 }
 
 // This function deletes one document from the "vuelos" collection of the "aerolinea" database
 
-func DeleteVuelo(id primitive.ObjectID) {
+func DeleteVuelo(numeroVuelo string, origenVuelo string, destinoVuelo string, fechaVuelo string) {
 
 	collection := getDatabaseCollection("vuelos")
-	_, err := collection.DeleteOne(context.Background(), bson.M{"_id": id})
+	_, err := collection.DeleteOne(context.Background(), bson.M{"numero_vuelo": numeroVuelo, "origen": origenVuelo, "destino": destinoVuelo, "fecha": fechaVuelo})
 	if err != nil {
 		// Handle the error
 		fmt.Println("Error deleting document:", err)
@@ -171,19 +174,19 @@ func CreateVuelo(flight Flight) {
 	if err != nil {
 		// Handle the error
 		fmt.Println("Error inserting document:", err)
-		return
 	}
-
+	return
 }
 
 // This function updates one document from the "vuelos" collection of the "aerolinea" database
-func UpdateVuelo(id primitive.ObjectID) {
+func UpdateVuelo(numeroVuelo string, origenVuelo string, destinoVuelo string, fechaVuelo string, updateBSON interface{}) {
 
 	collection := getDatabaseCollection("vuelos")
 
-	filter := bson.D{}
-	update := bson.D{}
-	_, err := collection.UpdateOne(context.Background(), filter, update)
+	filter := bson.M{"numero_vuelo": numeroVuelo, "origen": origenVuelo, "destino": destinoVuelo, "fecha": fechaVuelo}
+
+	updateBSON = bson.M{"$set": updateBSON}
+	_, err := collection.UpdateOne(context.Background(), filter, updateBSON)
 	if err != nil {
 		// Handle the error
 		fmt.Println("Error updating document:", err)
@@ -193,22 +196,22 @@ func UpdateVuelo(id primitive.ObjectID) {
 }
 
 // CreateReservation adds a new reservation to the database
-func CreateReservation(reservation Reservations) error {
+func CreateReservation(reservation Reservation) error {
 	collection := getDatabaseCollection("reservas")
 	_, err := collection.InsertOne(context.Background(), reservation)
 	return err
 }
 
 // GetReservation returns a reservation from the database with the given ID
-func GetReservation(id primitive.ObjectID) (Reservations, error) {
+func GetReservation(id primitive.ObjectID) (Reservation, error) {
 	collection := getDatabaseCollection("reservas")
-	var reservation Reservations
+	var reservation Reservation
 	err := collection.FindOne(context.Background(), bson.M{"_id": id}).Decode(&reservation)
 	return reservation, err
 }
 
 // UpdateReservation updates a reservation in the database with the given ID
-func UpdateReservation(id primitive.ObjectID, reservation Reservations) error {
+func UpdateReservation(id primitive.ObjectID, reservation Reservation) error {
 	collection := getDatabaseCollection("reservas")
 	_, err := collection.ReplaceOne(context.Background(), bson.M{"_id": id}, reservation)
 	return err

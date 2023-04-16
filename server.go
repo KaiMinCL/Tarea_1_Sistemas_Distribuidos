@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bd_aerolinea/controllers"
 	"log"
 	"os"
 
@@ -18,6 +19,11 @@ func main() {
 	var port = os.Getenv("PORT")
 	var server = os.Getenv("SERVER")
 	router := gin.Default()
-	//router.GET("/api/vuelo", GetVuelos)
+
+	router.GET("/api/vuelo", controllers.GetVuelo)
+	router.PUT("/api/vuelo", controllers.UpdateVuelo)
+	router.DELETE("/api/vuelo", controllers.DeleteVuelo)
+	router.POST("/api/vuelo", controllers.CreateVuelo)
+
 	router.Run(server + ":" + port)
 }
