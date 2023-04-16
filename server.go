@@ -18,9 +18,12 @@ func main() {
 
 	var port = os.Getenv("PORT")
 	var server = os.Getenv("SERVER")
+
+	// Create a new router using the gin framework
 	router := gin.Default()
 
-	router.GET("/api/vuelo", controllers.GetVuelo)
+	// Defines the routes for the vuelo API
+	router.GET("/api/vuelo", controllers.GetVuelos)
 	router.PUT("/api/vuelo", controllers.UpdateVuelo)
 	router.DELETE("/api/vuelo", controllers.DeleteVuelo)
 	router.POST("/api/vuelo", controllers.CreateVuelo)

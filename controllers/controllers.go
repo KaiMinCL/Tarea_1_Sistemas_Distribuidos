@@ -2,12 +2,9 @@ package controllers
 
 import (
 	"bd_aerolinea/models"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 /*func GetVuelos(c *gin.Context) {
@@ -25,80 +22,90 @@ import (
 	}
 }*/
 
-func GetVuelo(c *gin.Context) {
+// GetVuelo is a handler function that retrieves a flight based on its origin, destination and date of departure.
+func GetVuelos(c *gin.Context) {
 
 	origenVuelo := c.Query("origen")
 	destinoVuelo := c.Query("destino")
 	fechaVuelo := c.Query("fecha")
 
-	fmt.Println(origenVuelo, destinoVuelo, fechaVuelo)
-	vuelo, err := models.GetVuelo(origenVuelo, destinoVuelo, fechaVuelo)
+	// Call the GetVuelo function from the models package to retrieve the flight
+	vuelos, err := models.GetVuelos(origenVuelo, destinoVuelo, fechaVuelo)
 
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 
 	} else {
-
-		c.IndentedJSON(http.StatusOK, vuelo)
-
+		c.IndentedJSON(http.StatusOK, gin.H{
+			"vuelos": vuelos,
+		})
 	}
 
 }
 
+// CreateVuelo is a handler function that creates a new flight.
 func CreateVuelo(c *gin.Context) {
 
 	var vuelo models.Flight
 
+	// Bind the request body to the vuelo variable
 	if err := c.BindJSON(&vuelo); err != nil {
 
 		c.AbortWithStatus(http.StatusBadRequest)
 	} else {
 
+		// Call the CreateVuelo function from the models package to create the new flight
 		models.CreateVuelo(vuelo)
 	}
 }
 
+// UpdateVuelo is a handler function that updates an existing flight.
 func UpdateVuelo(c *gin.Context) {
 
 	//var vuelo models.Flight
 
+	// Retrieve the flight information (origin, destination, date, and flight number) from the query parameters
 	numeroVuelo := c.Query("numero_vuelo")
 	origenVuelo := c.Query("origen")
 	destinoVuelo := c.Query("destino")
 	fechaVuelo := c.Query("fecha")
 
-	var updateBSON interface{}
-
-	requestBody, err := ioutil.ReadAll(c.Request.Body)
-
-	if err != nil {
-		// Handle error
+	var update struct {
+		StockDePasajeros int `json:"stock_de_pasajeros"`
 	}
 
-	err = bson.UnmarshalExtJSON(requestBody, true, &updateBSON)
+	err := c.ShouldBindJSON(&update)
 	if err != nil {
-		// Handle error
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
-	models.UpdateVuelo(numeroVuelo, origenVuelo, destinoVuelo, fechaVuelo, updateBSON)
-	//c.IndentedJSON(http.StatusCreated, gin.H{"id_producto": vuelo.id_vuelo})
+	// Call the UpdateStockPasajeros function from the models package to update the flight's passenger stock
+	response, err := models.UpdateVuelo(numeroVuelo, origenVuelo, destinoVuelo, fechaVuelo, update.StockDePasajeros)
 
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
+// DeleteVuelo is a handler function that deletes an existing flight.
 func DeleteVuelo(c *gin.Context) {
 
+	// Retrieve the flight information (origin, destination, date, and flight number) from the query parameters
 	numeroVuelo := c.Query("numero_vuelo")
 	origenVuelo := c.Query("origen")
 	destinoVuelo := c.Query("destino")
 	fechaVuelo := c.Query("fecha")
 
-	/*count :=*/
-	models.DeleteVuelo(numeroVuelo, origenVuelo, destinoVuelo, fechaVuelo)
+	// Call the DeleteVuelo function from the models package to delete the flight with the given parameters
+	err := models.DeleteVuelo(numeroVuelo, origenVuelo, destinoVuelo, fechaVuelo)
 
-	/*if count > 0 {
-		c.IndentedJSON(http.StatusAccepted, gin.H{"id_vuelo": id_vuelo})
-	} else {
+	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
+	} else {
+		c.Status(http.StatusNoContent)
 	}
-	*/
 }
