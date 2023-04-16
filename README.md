@@ -5,8 +5,6 @@ BD_aerolinea
 @autors:
  - ÁLVAREZ DAVID 
  - EVANS JULES
- - GUZMÁN RENATA
-
 
 Tarea 1 sistemas ditribuidos
 ----------------------------

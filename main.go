@@ -1,90 +1,66 @@
 package main
 
-
 import (
-	"log"
-    "os"
-    "github.com/joho/godotenv"
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"github.com/gin-gonic/gin"
-	"context"
-	"time"
+	"log"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
-var(
-	SERVER string
-	PORT string
-	CONNECTION_STRING string
-	CLIENT *mongo.Client
-)
+func main() {
 
-func EnvMongoURI(){
-    err := godotenv.Load()
-    if err != nil {
-        log.Fatal("Error loading .env file")
-    }
-
-	SERVER = os.Getenv("SERVER")
-	PORT = os.Getenv("PORT")
-	CONNECTION_STRING = os.Getenv("CONNECTION_STRING")
-}
-
-
-func Routes(router *gin.Engine){
-	router.GET("/api/vuelo", getFlight())
-	//router.PUT("/api/vuelo", updateFlight())
-}
-
-func setupData(){
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	defaultFlight := flight{
-		id:primitive.NewObjectID(),
-		numero_vuelo:"323",
-		origen:"IQQ",
-		destino:"SCL",
-		hora_salida:"20h38",
-		hora_llegada:"22H50",
-		fecha:"14/04/2023",
-		avion:plane{modelo:"A320neo", numero_de_serie: "12345", stock_de_pasajeros:90},
-		ancillaries:[]ancillary{{nombre:"Equipaje_de_mano", stock:68, ssr:"BGH"},
-			{nombre:"Equipaje_de_bodega", stock:92, ssr:"BGR"},
-			{nombre:"Asiento", stock:90, ssr:"STDF"},
-			{nombre:"Embarque y Check In prioritario", stock:79, ssr:"PAXS"},
-			{nombre:"Mascota en cabina", stock:4, ssr:"PTCR"},
-			{nombre:"Mascota en bodega", stock:12, ssr:"AVIH"},
-			{nombre:"Equipaje especial", stock:71, ssr:"SPML"},
-			{nombre:"Acceso a Salón VIP", stock:36, ssr:"LNGE"},
-			{nombre:"Wi-Fi a bordo", stock:57, ssr:"WIFI"},
-		},
-	}
-
-	fmt.Println(defaultFlight)
-
-
-	collection := getCollection(CLIENT, "flights")
-
-	result, err := collection.InsertOne(ctx, defaultFlight)
-
+	err := godotenv.Load()
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		log.Fatal("Error loading .env file")
 	}
-	fmt.Println(result)
-}
 
-func main(){
-	router := gin.Default()
+	var SERVER = os.Getenv("SERVER")
+	var PORT = os.Getenv("PORT")
 
-	EnvMongoURI()
-
-	fmt.Println("---->", SERVER, PORT, CONNECTION_STRING)
-
-	CLIENT = ConnectDB()
-	Routes(router)
-	router.Run(SERVER+":"+PORT);
-
+	fmt.Println("connecting to", SERVER, ":", PORT)
+	var option int
+	var subOption int
+	for {
+		fmt.Println("Menu")
+		fmt.Println("1. Gestionar reserva")
+		fmt.Println("2. Obtener estadisticas")
+		fmt.Println("3. Salir")
+		fmt.Print("Ingrese una opcion: ")
+		fmt.Scan(&option)
+		switch option {
+		case 1:
+			fmt.Println("Submenu:")
+			fmt.Println("1. Crear reserva")
+			fmt.Println("2. Obtener reserva")
+			fmt.Println("3. Modificar reserva")
+			fmt.Println("4. Salir")
+			fmt.Print("Ingrese una opcion: ")
+			fmt.Scan(&subOption)
+			switch subOption {
+			case 1:
+				fmt.Println("Crear reserva")
+				// Do something
+			case 2:
+				fmt.Println("Obtener reserva")
+				// Do something
+			case 3:
+				fmt.Println("Modificar reserva")
+				// Do something
+			case 4:
+				fmt.Println("Salir")
+				return
+			default:
+				fmt.Println("Opcion invalida")
+			}
+		case 2:
+			fmt.Println("Obtener estadisticas")
+			// Do something
+		case 3:
+			fmt.Println("Salir")
+			return
+		default:
+			fmt.Println("Opcion invalida")
+		}
+	}
 }

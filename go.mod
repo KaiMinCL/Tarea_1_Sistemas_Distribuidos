@@ -1,4 +1,4 @@
-module bd_areolinea
+module bd_aerolinea
 
 go 1.20
 
