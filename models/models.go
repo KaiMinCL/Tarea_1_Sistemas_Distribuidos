@@ -12,7 +12,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	//"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -45,6 +45,15 @@ type Flight struct {
 	Ancillaries []FlightAncillary `bson:"ancillaries" json:"ancillaries"`
 }
 
+type ReservaFlight struct{
+	NumeroVuelo string
+	Origen string
+	Destino string
+	HoraSalida string
+	HoraLlegada string
+	Fecha string
+}
+
 // Define the PassengerAncillary struct, which represents an optional service that a passenger can select
 type PassengerAncillary struct {
 	Cantidad int    `bson:"cantidad" json:"cantidad"`
@@ -59,7 +68,7 @@ type PassengerAncillaryList struct {
 
 // Define the Passengers struct, which represents a passenger who has booked a flight
 type Passenger struct {
-	Name        string                   `bson:"name" json:"name"`
+	Name        string                   `bson:"nombre" json:"nombre"`
 	Apellido    string                   `bson:"apellido" json:"apellido"`
 	Edad        int                      `bson:"edad" json:"edad"`
 	Ancillaries []PassengerAncillaryList `bson:"ancillaries" json:"ancillaries"`
@@ -104,6 +113,7 @@ func GetVuelos(origenVuelo string, destinoVuelo string, fechaVuelo string) ([]Fl
 
 	// Define a filter to find all flights with the specified origen, destino, and fecha
 	filter := bson.M{"origen": origenVuelo, "destino": destinoVuelo, "fecha": fechaVuelo}
+	fmt.Println(origenVuelo, destinoVuelo, fechaVuelo)
 
 	// Find all the flights that match the filter
 	cur, err := collection.Find(context.Background(), filter)
@@ -195,30 +205,64 @@ func UpdateVuelo(numeroVuelo string, origenVuelo string, destinoVuelo string, fe
 // CRUD Reservations
 
 // CreateReservation adds a new reservation to the database
-func CreateReservation(reservation Reservation) error {
+func CreateReservation(reservation Reservation) (map[string]interface{}, error) {
 	collection := getDatabaseCollection("reservas")
 	_, err := collection.InsertOne(context.Background(), reservation)
-	return err
+	response := map[string]interface{}{
+		"PNR": reservation.PNR,
+	}
+	return response, err
 }
 
 // GetReservation returns a reservation from the database with the given ID
-func GetReservation(id primitive.ObjectID) (Reservation, error) {
+func GetReservation(pnr string, apellido string) (Reservation, error) {
 	collection := getDatabaseCollection("reservas")
 	var reservation Reservation
-	err := collection.FindOne(context.Background(), bson.M{"_id": id}).Decode(&reservation)
+	err := collection.FindOne(context.Background(), bson.M{"PNR": pnr, "apellido": apellido}).Decode(&reservation)
 	return reservation, err
 }
 
-// UpdateReservation updates a reservation in the database with the given ID
-func UpdateReservation(id primitive.ObjectID, reservation Reservation) error {
+func GetAllReservations()([]Reservation, error){
+	var reservas []Reservation
+
 	collection := getDatabaseCollection("reservas")
-	_, err := collection.ReplaceOne(context.Background(), bson.M{"_id": id}, reservation)
-	return err
+	filter := bson.M{}
+	// Find all the reservations
+	cur, err := collection.Find(context.Background(), filter)
+	if err != nil {
+		fmt.Println("Error retrieving documents:", err)
+		return reservas, err
+	}
+	defer cur.Close(context.Background())
+
+	// Iterate over the cursor and append each reservation to the array
+	for cur.Next(context.Background()) {
+		var reserva Reservation
+		if err := cur.Decode(&reserva); err != nil {
+			fmt.Println("Error decoding document:", err)
+			return reservas, err
+		}
+		reservas = append(reservas, reserva)
+	}
+
+	return reservas, nil
+}
+
+// UpdateReservation updates a reservation in the database with the given ID
+func UpdateReservation(pnr string, apellido string, reservation Reservation) (map[string]interface{}, error){
+	collection := getDatabaseCollection("reservas")
+	_, err := collection.ReplaceOne(context.Background(), bson.M{"PNR": pnr, "apellido": apellido}, reservation)
+
+	response := map[string]interface{}{
+		"PNR": reservation.PNR,
+	}
+
+	return response, err
 }
 
 // DeleteReservation deletes a reservation from the database with the given ID
-func DeleteReservation(id primitive.ObjectID) error {
+func DeleteReservation(pnr string, apellido string) error {
 	collection := getDatabaseCollection("reservas")
-	_, err := collection.DeleteOne(context.Background(), bson.M{"_id": id})
+	_, err := collection.DeleteOne(context.Background(), bson.M{"PNR": pnr, "apellido": apellido})
 	return err
 }
