@@ -2,28 +2,14 @@ package controllers
 
 import (
 	"bd_aerolinea/models"
-	"net/http"
-	"math/rand"
-	"github.com/gin-gonic/gin"
-	"log"
-	"strings"
 	"fmt"
+	"log"
+	"math/rand"
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
 )
-
-/*func GetVuelos(c *gin.Context) {
-
-	//vuelo := models.GetVuelos()
-
-	if vuelo == nil || len(vuelo) == 0 {
-
-		c.AbortWithStatus(http.StatusNotFound)
-
-	} else {
-
-		c.IndentedJSON(http.StatusOK, vuelo)
-
-	}
-}*/
 
 // GetVuelo is a handler function that retrieves a flight based on its origin, destination and date of departure.
 func GetVuelos(c *gin.Context) {
@@ -39,9 +25,7 @@ func GetVuelos(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 
 	} else {
-		c.IndentedJSON(http.StatusOK, gin.H{
-			"vuelos": vuelos,
-		})
+		c.JSON(http.StatusOK, vuelos)
 	}
 
 }
@@ -113,19 +97,19 @@ func DeleteVuelo(c *gin.Context) {
 	}
 }
 
-func GenerateNewPNR() string{
+func GenerateNewPNR() string {
 	reservations, err := models.GetAllReservations()
-	if err != nil{
+	if err != nil {
 		log.Fatal("Error in getting the reservations")
 	}
-	if reservations == nil{
+	if reservations == nil {
 		return convertToBase(rand.Intn(36*36*36*36*36*36), 36)
 	}
 	for true {
 		//The max number of pnr combinations
-		n := rand.Intn(36*36*36*36*36*36)
+		n := rand.Intn(36 * 36 * 36 * 36 * 36 * 36)
 		NewPnr := convertToBase(n, 36)
-		if searchReservations(NewPnr, reservations) == 0{
+		if searchReservations(NewPnr, reservations) == 0 {
 			return NewPnr
 		}
 	}
@@ -134,8 +118,8 @@ func GenerateNewPNR() string{
 }
 
 func searchReservations(NewPNR string, reservations []models.Reservation) int {
-	for i := 0; i<len(reservations); i++{
-		if reservations[i].PNR == NewPNR{
+	for i := 0; i < len(reservations); i++ {
+		if reservations[i].PNR == NewPNR {
 			return 0
 		}
 	}
@@ -143,32 +127,32 @@ func searchReservations(NewPNR string, reservations []models.Reservation) int {
 }
 
 func convertToBase(n, base int) string {
-    if n == 0 {
-        return "0"
-    }
-    digits := []string{}
-    for n > 0 {
-        modulo := n % base
-        if modulo < 10 {
-            digits = append(digits, fmt.Sprintf("%d", modulo))
-        } else {
-            digits = append(digits, IntToStr(modulo - 10))
-        }
-        n /= base
-    }
-    reverse(digits)
-    return strings.Join(digits, "")
+	if n == 0 {
+		return "0"
+	}
+	digits := []string{}
+	for n > 0 {
+		modulo := n % base
+		if modulo < 10 {
+			digits = append(digits, fmt.Sprintf("%d", modulo))
+		} else {
+			digits = append(digits, IntToStr(modulo-10))
+		}
+		n /= base
+	}
+	reverse(digits)
+	return strings.Join(digits, "")
 }
 
-func IntToStr(i int) string{
-   return string('A' + i)
+func IntToStr(i int) string {
+	return string('A' + i)
 
 }
 
 func reverse(a []string) {
-    for i, j := 0, len(a)-1; i < j; i, j = i+1, j-1 {
-        a[i], a[j] = a[j], a[i]
-    }
+	for i, j := 0, len(a)-1; i < j; i, j = i+1, j-1 {
+		a[i], a[j] = a[j], a[i]
+	}
 }
 
 func CreateReservation(c *gin.Context) {
@@ -193,7 +177,7 @@ func CreateReservation(c *gin.Context) {
 	}
 }
 
-func GetReservations(c *gin.Context){
+func GetReservations(c *gin.Context) {
 
 	// Retrieve the reservation information (pnr, apellido) from the query parameters
 	pnr := c.Query("pnr")
@@ -204,11 +188,11 @@ func GetReservations(c *gin.Context){
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 	} else {
-		c. IndentedJSON(http.StatusOK, gin.H{"reservas": reservas})
+		c.IndentedJSON(http.StatusOK, gin.H{"reservas": reservas})
 	}
 }
 
-func UpdateReservation(c *gin.Context){
+func UpdateReservation(c *gin.Context) {
 	//var vuelo models.Flight
 
 	// Retrieve the reservation information (pnr, apellido) from the query parameters
@@ -235,7 +219,7 @@ func UpdateReservation(c *gin.Context){
 
 }
 
-func DeleteReservation(c *gin.Context){
+func DeleteReservation(c *gin.Context) {
 	// Retrieve the reservation information (pnr, apellido) from the query parameters
 	pnr := c.Query("pnr")
 	apellido := c.Query("apellido")

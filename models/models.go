@@ -12,7 +12,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
-	//"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -45,13 +44,13 @@ type Flight struct {
 	Ancillaries []FlightAncillary `bson:"ancillaries" json:"ancillaries"`
 }
 
-type ReservaFlight struct{
+type ReservaFlight struct {
 	NumeroVuelo string
-	Origen string
-	Destino string
-	HoraSalida string
+	Origen      string
+	Destino     string
+	HoraSalida  string
 	HoraLlegada string
-	Fecha string
+	Fecha       string
 }
 
 // Define the PassengerAncillary struct, which represents an optional service that a passenger can select
@@ -222,7 +221,7 @@ func GetReservation(pnr string, apellido string) (Reservation, error) {
 	return reservation, err
 }
 
-func GetAllReservations()([]Reservation, error){
+func GetAllReservations() ([]Reservation, error) {
 	var reservas []Reservation
 
 	collection := getDatabaseCollection("reservas")
@@ -249,7 +248,7 @@ func GetAllReservations()([]Reservation, error){
 }
 
 // UpdateReservation updates a reservation in the database with the given ID
-func UpdateReservation(pnr string, apellido string, reservation Reservation) (map[string]interface{}, error){
+func UpdateReservation(pnr string, apellido string, reservation Reservation) (map[string]interface{}, error) {
 	collection := getDatabaseCollection("reservas")
 	_, err := collection.ReplaceOne(context.Background(), bson.M{"PNR": pnr, "apellido": apellido}, reservation)
 
