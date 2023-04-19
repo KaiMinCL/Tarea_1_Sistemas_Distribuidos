@@ -44,13 +44,13 @@ type Flight struct {
 	Ancillaries []FlightAncillary `bson:"ancillaries" json:"ancillaries"`
 }
 
-type ReservaFlight struct {
-	NumeroVuelo string
-	Origen      string
-	Destino     string
-	HoraSalida  string
-	HoraLlegada string
-	Fecha       string
+type ReservationFlight struct {
+	NumeroVuelo string `bson:"numero_vuelo" json:"numero_vuelo"`
+	Origen      string `bson:"origen" json:"origen"`
+	Destino     string `bson:"destino" json:"destino"`
+	HoraSalida  string `bson:"hora_salida" json:"hora_salida"`
+	HoraLlegada string `bson:"hora_llegada" json:"hora_llegada"`
+	Fecha       string `bson:"fecha" json:"fecha"`
 }
 
 // Define the PassengerAncillary struct, which represents an optional service that a passenger can select
@@ -75,10 +75,10 @@ type Passenger struct {
 
 // Define the Reservations struct, which represents a reservation made by one or more passengers for one or more flights
 type Reservation struct {
-	PNR        string      `bson:"PNR" json:"PNR"`
-	Apellido   string      `bson:"apellido" json:"apellido"`
-	Vuelos     []Flight    `bson:"vuelos" json:"vuelos"`
-	Passengers []Passenger `bson:"pasajeros" json:"pasajeros"`
+	PNR        string      			  `bson:"PNR" json:"PNR"`
+	Apellido   string      			  `bson:"apellido" json:"apellido"`
+	Vuelos     []ReservationFlight    `bson:"vuelos" json:"vuelos"`
+	Passengers []Passenger 			  `bson:"pasajeros" json:"pasajeros"`
 }
 
 // Connect to MongoDB and retrieve the collection needed

@@ -99,17 +99,23 @@ func DeleteVuelo(c *gin.Context) {
 
 func GenerateNewPNR() string {
 	reservations, err := models.GetAllReservations()
+
 	if err != nil {
 		log.Fatal("Error in getting the reservations")
 	}
+
 	if reservations == nil {
 		return convertToBase(rand.Intn(36*36*36*36*36*36), 36)
 	}
+
 	for true {
-		//The max number of pnr combinations
+		//The max number of pnr combinations is 36^6
+		// In this function we are generating a pnr then looking if we already have a
+		// reservation with this pnr if yes we generate a new pnr, if not we continue
+		// with the generated pnr.
 		n := rand.Intn(36 * 36 * 36 * 36 * 36 * 36)
 		NewPnr := convertToBase(n, 36)
-		if searchReservations(NewPnr, reservations) == 0 {
+		if elementInReservations(NewPnr, reservations) == 0 {
 			return NewPnr
 		}
 	}
@@ -117,16 +123,23 @@ func GenerateNewPNR() string {
 	return "This return wil never be executed"
 }
 
-func searchReservations(NewPNR string, reservations []models.Reservation) int {
+func elementInReservations(NewPNR string, reservations []models.Reservation) int {
+	//This function looks in a array of reservations if the inputed pnr is already present
+	// in an other reservation.
 	for i := 0; i < len(reservations); i++ {
 		if reservations[i].PNR == NewPNR {
-			return 0
+			return 1
 		}
 	}
-	return 1
+	return 0
 }
 
 func convertToBase(n, base int) string {
+	//This function is used to converrt an int in base 10 to any other base
+	// A pnr is a combination of the letters and numbers
+	// There are 36 in total so we generate a number between 0 and 36^6
+	// Then we convert it in base 36 to get a randmly generated pnr
+
 	if n == 0 {
 		return "0"
 	}
@@ -136,17 +149,12 @@ func convertToBase(n, base int) string {
 		if modulo < 10 {
 			digits = append(digits, fmt.Sprintf("%d", modulo))
 		} else {
-			digits = append(digits, IntToStr(modulo-10))
+			digits = append(digits, string('A' - 10 + modulo))
 		}
 		n /= base
 	}
 	reverse(digits)
 	return strings.Join(digits, "")
-}
-
-func IntToStr(i int) string {
-	return string('A' + i)
-
 }
 
 func reverse(a []string) {
@@ -158,7 +166,6 @@ func reverse(a []string) {
 func CreateReservation(c *gin.Context) {
 
 	var reserva models.Reservation
-	fmt.Println("Generating PNR")
 
 	// Bind the request body to the reserva variable
 	if err := c.BindJSON(&reserva); err != nil {
@@ -166,7 +173,10 @@ func CreateReservation(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 	} else {
 
+		fmt.Println("Generating PNR")
 		reserva.PNR = GenerateNewPNR()
+
+		fmt.Println("Creating Reservation")
 
 		// Call the CreateReservation function from the models package to create the new reservation
 		response, err := models.CreateReservation(reserva)
@@ -182,10 +192,13 @@ func GetReservations(c *gin.Context) {
 	// Retrieve the reservation information (pnr, apellido) from the query parameters
 	pnr := c.Query("pnr")
 	apellido := c.Query("apellido")
+
 	// Call the GetReservation func to get the said reservation using the parameters
 	reservas, err := models.GetReservation(pnr, apellido)
 
 	if err != nil {
+		fmt.Println(err)
+
 		c.AbortWithStatus(http.StatusNotFound)
 	} else {
 		c.IndentedJSON(http.StatusOK, gin.H{"reservas": reservas})
@@ -193,7 +206,6 @@ func GetReservations(c *gin.Context) {
 }
 
 func UpdateReservation(c *gin.Context) {
-	//var vuelo models.Flight
 
 	// Retrieve the reservation information (pnr, apellido) from the query parameters
 	pnr := c.Query("pnr")
@@ -228,6 +240,8 @@ func DeleteReservation(c *gin.Context) {
 	err := models.DeleteReservation(pnr, apellido)
 
 	if err != nil {
+		fmt.Println(err)
+
 		c.AbortWithStatus(http.StatusNotFound)
 	} else {
 		c.Status(http.StatusNoContent)
