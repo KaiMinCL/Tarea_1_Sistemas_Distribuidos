@@ -67,18 +67,18 @@ type PassengerAncillaryList struct {
 
 // Define the Passengers struct, which represents a passenger who has booked a flight
 type Passenger struct {
-	Name        string                   `bson:"nombre" json:"nombre"`
-	Apellido    string                   `bson:"apellido" json:"apellido"`
-	Edad        int                      `bson:"edad" json:"edad"`
-	Ancillaries []PassengerAncillaryList `bson:"ancillaries" json:"ancillaries"`
+	Name        string                 `bson:"nombre" json:"nombre"`
+	Apellido    string                 `bson:"apellido" json:"apellido"`
+	Edad        int                    `bson:"edad" json:"edad"`
+	Ancillaries PassengerAncillaryList `bson:"ancillaries" json:"ancillaries"`
 }
 
 // Define the Reservations struct, which represents a reservation made by one or more passengers for one or more flights
 type Reservation struct {
-	PNR        string      			  `bson:"PNR" json:"PNR"`
-	Apellido   string      			  `bson:"apellido" json:"apellido"`
-	Vuelos     []ReservationFlight    `bson:"vuelos" json:"vuelos"`
-	Passengers []Passenger 			  `bson:"pasajeros" json:"pasajeros"`
+	PNR        string              `bson:"PNR" json:"PNR"`
+	Apellido   string              `bson:"apellido" json:"apellido"`
+	Vuelos     []ReservationFlight `bson:"vuelos" json:"vuelos"`
+	Passengers []Passenger         `bson:"pasajeros" json:"pasajeros"`
 }
 
 // Connect to MongoDB and retrieve the collection needed
@@ -204,12 +204,15 @@ func UpdateVuelo(numeroVuelo string, origenVuelo string, destinoVuelo string, fe
 // CRUD Reservations
 
 // CreateReservation adds a new reservation to the database
+
 func CreateReservation(reservation Reservation) (map[string]interface{}, error) {
+
 	collection := getDatabaseCollection("reservas")
 	_, err := collection.InsertOne(context.Background(), reservation)
 	response := map[string]interface{}{
 		"PNR": reservation.PNR,
 	}
+
 	return response, err
 }
 

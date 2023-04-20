@@ -149,7 +149,7 @@ func convertToBase(n, base int) string {
 		if modulo < 10 {
 			digits = append(digits, fmt.Sprintf("%d", modulo))
 		} else {
-			digits = append(digits, string('A' - 10 + modulo))
+			digits = append(digits, string('A'-10+modulo))
 		}
 		n /= base
 	}

@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bd_aerolinea/controllers"
 	"bd_aerolinea/models"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -50,12 +54,24 @@ func main() {
 			fmt.Scan(&subOption)
 			switch subOption {
 			case 1:
+
+				// ALL OF THIS IS FOR CREATING A RESERVATION
+				// It remains the following functionalities:
+				// - check if there are seats left on the plane before selling them
+				// - Remove capacity for every passenger sold on the flights
+				// - Remove capacity for every ancillary sold on the flight
+				// - Update mongoDB with the updated flight information
+				// - Indifference to string caps for the Reservation "Apellido" (Lastname)
+
 				var (
 					fechaIda          string
 					fechaRegreso      string
 					origen            string
 					destino           string
 					cantidadPasajeros int
+					Pasajeros         []models.Passenger
+					Reserva           models.Reservation
+					vueloVuelta       models.Flight
 				)
 				fmt.Println("Crear reserva")
 				fmt.Println("Ingrese la fecha de ida:")
@@ -96,7 +112,7 @@ func main() {
 
 				// Check if the vuelos slice is empty
 				if len(vuelos) == 0 {
-					fmt.Println("There are no vuelos available.")
+					fmt.Println("No hay vuelos disponibles para la fecha de ida")
 					return
 				}
 
@@ -115,10 +131,201 @@ func main() {
 					minutosVuelo := int(horaLlegada.Sub(horaSalida).Minutes())
 
 					precioVuelo := 590 * minutosVuelo
-					fmt.Print(i)
+					fmt.Print(i + 1)
 					fmt.Print(". " + vuelos[i].NumeroVuelo + " " + vuelos[i].HoraSalida + " - " + vuelos[i].HoraLlegada + " $")
 					fmt.Print(precioVuelo, "\n")
 				}
+
+				var opcionIda int
+				fmt.Print("\nIngrese una Opción: ")
+				fmt.Scan(&opcionIda)
+				vueloIda := vuelos[opcionIda-1]
+
+				vueloReserva := models.ReservationFlight{
+					NumeroVuelo: vueloIda.NumeroVuelo,
+					Origen:      origen,
+					Destino:     destino,
+					HoraSalida:  vueloIda.HoraSalida,
+					HoraLlegada: vueloIda.HoraLlegada,
+					Fecha:       fechaIda,
+				}
+				Reserva.Vuelos = append(Reserva.Vuelos, vueloReserva)
+
+				if fechaRegreso != "no" {
+					resp, err := http.Get(URL + "/vuelo?origen=" + destino + "&destino=" + origen + "&fecha=" + fechaRegreso)
+
+					if err != nil {
+						log.Fatal(err)
+					}
+					defer resp.Body.Close()
+
+					// Read the response body
+					body, err := ioutil.ReadAll(resp.Body)
+					if err != nil {
+						fmt.Println("error:", err)
+						return
+					}
+
+					var vuelos []models.Flight
+
+					// parse the JSON response into the vuelos slice
+					err = json.Unmarshal(body, &vuelos)
+					if err != nil {
+						fmt.Println("error:", err)
+						return
+					}
+
+					// Check if the vuelos slice is empty
+					if len(vuelos) == 0 {
+						fmt.Println("No hay vuelos disponibles para la fecha de vuelta")
+						return
+					}
+
+					// print out the vuelos slice to verify that it was parsed correctly
+					for i := 0; i < len(vuelos); i++ {
+
+						// Parse the start and end times
+
+						horaSalida, _ := time.Parse("15:04", vuelos[i].HoraSalida)
+						horaLlegada, _ := time.Parse("15:04", vuelos[i].HoraLlegada)
+
+						if horaLlegada.Before(horaSalida) {
+							horaLlegada = horaLlegada.Add(24 * time.Hour)
+						}
+
+						minutosVuelo := int(horaLlegada.Sub(horaSalida).Minutes())
+
+						precioVuelo := 590 * minutosVuelo
+						fmt.Print(i + 1)
+						fmt.Print(". " + vuelos[i].NumeroVuelo + " " + vuelos[i].HoraSalida + " - " + vuelos[i].HoraLlegada + " $")
+						fmt.Print(precioVuelo, "\n")
+					}
+
+					var opcionVuelta int
+					fmt.Println("Ingrese una Opción: ")
+					fmt.Scan(&opcionVuelta)
+					vueloVuelta = vuelos[opcionVuelta-1]
+
+					vueloReserva := models.ReservationFlight{
+						NumeroVuelo: vueloVuelta.NumeroVuelo,
+						Origen:      destino,
+						Destino:     origen,
+						HoraSalida:  vueloVuelta.HoraSalida,
+						HoraLlegada: vueloVuelta.HoraLlegada,
+						Fecha:       fechaRegreso,
+					}
+
+					Reserva.Vuelos = append(Reserva.Vuelos, vueloReserva)
+				}
+
+				for i := 0; i < cantidadPasajeros; i++ {
+
+					fmt.Print("\nPasajero ", i+1, " :\n")
+
+					var Pasajero models.Passenger
+
+					fmt.Println("Ingrese Nombre: ")
+					fmt.Scan(&Pasajero.Name)
+					fmt.Println("Ingrese Apellido: ")
+					fmt.Scan(&Pasajero.Apellido)
+
+					if i == 0 {
+						Reserva.Apellido = Pasajero.Apellido
+					}
+
+					fmt.Println("Ingrese Edad: ")
+					fmt.Scan(&Pasajero.Edad)
+
+					fmt.Println("Ancillares Ida: ")
+
+					for i := 0; i < len(vueloIda.Ancillaries); i++ {
+						fmt.Print(i + 1)
+						fmt.Print(". " + vueloIda.Ancillaries[i].Nombre + " $0000\n")
+					}
+
+					fmt.Print("\nIngrese los Ancillaries (separados por comas): ")
+					var seleccionAncillaries string
+					fmt.Scan(&seleccionAncillaries)
+
+					stringSlice := strings.Split(seleccionAncillaries, ",")
+					seleccionArray := make([]int, len(stringSlice))
+
+					for i, v := range stringSlice {
+						seleccionArray[i], err = strconv.Atoi(v)
+						seleccionArray[i] -= 1
+
+						var seleccionAncillary models.PassengerAncillary
+
+						seleccionAncillary.SSR = vueloIda.Ancillaries[seleccionArray[i]].SSR
+
+						for j := 0; j <= len(Pasajero.Ancillaries.Ida); j++ {
+							if j == len(Pasajero.Ancillaries.Ida) {
+								seleccionAncillary.Cantidad = 1
+								break
+							}
+
+							if seleccionAncillary.SSR == Pasajero.Ancillaries.Ida[j].SSR {
+								Pasajero.Ancillaries.Ida[j].Cantidad += 1
+								break
+							}
+
+						}
+						Pasajero.Ancillaries.Ida = append(Pasajero.Ancillaries.Ida, seleccionAncillary)
+					}
+
+					if fechaRegreso != "no" {
+						fmt.Println("Ancillares Vuelta: ")
+
+						for i := 0; i < len(vueloVuelta.Ancillaries); i++ {
+							fmt.Print(i + 1)
+							fmt.Print(". " + vueloVuelta.Ancillaries[i].Nombre + " $0000\n")
+						}
+
+						fmt.Print("\nIngrese los Ancillaries (separados por comas): ")
+						var seleccionAncillaries string
+						fmt.Scan(&seleccionAncillaries)
+
+						stringSlice := strings.Split(seleccionAncillaries, ",")
+						seleccionArray := make([]int, len(stringSlice))
+
+						for i, v := range stringSlice {
+							seleccionArray[i], err = strconv.Atoi(v)
+							seleccionArray[i] -= 1
+
+							var seleccionAncillary models.PassengerAncillary
+
+							seleccionAncillary.SSR = vueloVuelta.Ancillaries[seleccionArray[i]].SSR
+
+							for j := 0; j <= len(Pasajero.Ancillaries.Vuelta); j++ {
+								if j == len(Pasajero.Ancillaries.Vuelta) {
+									seleccionAncillary.Cantidad = 1
+									break
+								}
+
+								if seleccionAncillary.SSR == Pasajero.Ancillaries.Vuelta[j].SSR {
+									Pasajero.Ancillaries.Vuelta[j].Cantidad += 1
+									break
+								}
+
+							}
+							Pasajero.Ancillaries.Vuelta = append(Pasajero.Ancillaries.Vuelta, seleccionAncillary)
+						}
+
+					}
+
+					Pasajeros = append(Pasajeros, Pasajero)
+				}
+
+				Reserva.Passengers = Pasajeros
+				Reserva.PNR = controllers.GenerateNewPNR()
+
+				JSONString, err := json.Marshal(Reserva)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				http.Post(URL+"/reserva", "application/json", bytes.NewBuffer(JSONString))
+				fmt.Println(Reserva)
 
 			case 2:
 				fmt.Println("Obtener reserva")
