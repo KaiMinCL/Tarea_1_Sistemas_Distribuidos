@@ -7,8 +7,12 @@ import (
 	"math/rand"
 	"net/http"
 	"strings"
-
+	"strconv"
 	"github.com/gin-gonic/gin"
+)
+
+var(
+	AncillaryPrice = map[string]int{"BGH":10000, "BGR":30000, "STDF":5000, "PAXS":2000, "PTCR":40000, "AVIH":40000, "SPML":35000, "LNGE":15000, "WIFI":20000}
 )
 
 // GetVuelo is a handler function that retrieves a flight based on its origin, destination and date of departure.
@@ -163,6 +167,57 @@ func reverse(a []string) {
 	}
 }
 
+func SumAncillaries(PA []models.PassengerAncillaryList) (int, int){
+	countIda := 0
+	countVuelta := 0
+	for i := 0; i < len(PA); i++{
+		for j := 0; j < len(PA[i].Ida); j++{
+			countIda += AncillaryPrice[PA[i].Ida[j].SSR]*PA[i].Ida[j].Cantidad
+		}
+		for j := 0; j < len(PA[i].Vuelta); j++{
+			countVuelta += AncillaryPrice[PA[i].Vuelta[j].SSR]*PA[i].Vuelta[j].Cantidad
+			fmt.Println(countVuelta, PA[i].Vuelta[j].SSR, PA[i].Vuelta[j].Cantidad)
+		}
+	}
+
+	return countIda, countVuelta
+}
+
+func SumVuelos (flights []models.ReservationFlight) (int, int){
+	var tiempoIda int
+	var tiempoVuelta int
+	for i:=0; i<len(flights); i+=2{
+		horasSalidaIda, minutosSalidaIda, _ := strings.Cut(flights[i].HoraSalida, ":")
+		horasLlegadaIda, minutosLlegadaIda, _ := strings.Cut(flights[i].HoraLlegada, ":")
+		horasSalidaVuelta, minutosSalidaVuelta, _ := strings.Cut(flights[i+1].HoraSalida, ":")
+		horasLlegadaVuelta, minutosLlegadaVuelta, _ := strings.Cut(flights[i+1].HoraLlegada, ":")
+
+		horasSalidaIdaC, _ := strconv.Atoi(horasSalidaIda)
+		horasLlegadaIdaC, _ := strconv.Atoi(horasLlegadaIda)
+		minutosSalidaIdaC, _ := strconv.Atoi(minutosSalidaIda)
+		minutosLlegadaIdaC, _ := strconv.Atoi(minutosLlegadaIda)
+		horasSalidaVueltaC, _ := strconv.Atoi(horasSalidaVuelta)
+		horasLlegadaVueltaC, _ := strconv.Atoi(horasLlegadaVuelta)
+		minutosSalidaVueltaC, _ := strconv.Atoi(minutosSalidaVuelta)
+		minutosLlegadaVueltaC, _ := strconv.Atoi(minutosLlegadaVuelta)
+
+		tiempoIda = (1440 * CompareInt(horasSalidaIdaC, horasLlegadaIdaC)) + horasLlegadaIdaC*60+minutosLlegadaIdaC-(horasSalidaIdaC*60+minutosSalidaIdaC)
+		tiempoVuelta = (1440 * CompareInt(horasSalidaVueltaC, horasLlegadaVueltaC)) + horasLlegadaVueltaC*60+minutosLlegadaVueltaC-(horasSalidaVueltaC*60+minutosSalidaVueltaC)
+
+	}
+
+	return 590*tiempoIda, 590*tiempoVuelta
+}
+
+func CompareInt(a int, b int) int{
+	//returns 1 if a > b 0 otherwise
+	if a>b{
+		return 1
+	} else {
+		return 0
+	}
+}
+
 func CreateReservation(c *gin.Context) {
 
 	var reserva models.Reservation
@@ -175,6 +230,13 @@ func CreateReservation(c *gin.Context) {
 
 		fmt.Println("Generating PNR")
 		reserva.PNR = GenerateNewPNR()
+
+		fmt.Println("Calculating Balances")
+		for i := 0; i<len(reserva.Passengers); i++{
+			reserva.Passengers[i].Balances.AncillariesIda, reserva.Passengers[i].Balances.AncillariesVuelta = SumAncillaries(reserva.Passengers[i].Ancillaries)
+			reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(reserva.Vuelos)
+		}
+
 
 		fmt.Println("Creating Reservation")
 
@@ -199,7 +261,8 @@ func GetReservations(c *gin.Context) {
 	if err != nil {
 		fmt.Println(err)
 
-		c.AbortWithStatus(http.StatusNotFound)
+		c.IndentedJSON(http.StatusNotFound, strings.TrimSuffix(fmt.Sprintln(err), "\n"))
+
 	} else {
 		c.IndentedJSON(http.StatusOK, gin.H{"reservas": reservas})
 	}

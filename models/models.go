@@ -71,6 +71,14 @@ type Passenger struct {
 	Apellido    string                   `bson:"apellido" json:"apellido"`
 	Edad        int                      `bson:"edad" json:"edad"`
 	Ancillaries []PassengerAncillaryList `bson:"ancillaries" json:"ancillaries"`
+	Balances BalancesObj `bson:"balances" json:"balances"`
+}
+
+type BalancesObj struct{
+	AncillariesIda int `bson:"ancillaries_ida" json:"ancillaries_ida"`
+	VueloIda int `bson:"vuelo_ida" json:"vuelo_ida"`
+	AncillariesVuelta int `bson:"ancillaries_vuelta" json:"ancillaries_vuelta"`
+	VueloVuelta int `bson:"vuelo_vuelta" json:"vuelo_vuelta"`
 }
 
 // Define the Reservations struct, which represents a reservation made by one or more passengers for one or more flights
@@ -79,6 +87,34 @@ type Reservation struct {
 	Apellido   string      			  `bson:"apellido" json:"apellido"`
 	Vuelos     []ReservationFlight    `bson:"vuelos" json:"vuelos"`
 	Passengers []Passenger 			  `bson:"pasajeros" json:"pasajeros"`
+}
+
+type AncillariesStatistics struct {
+	Nombre string `bson:"nombre" json:"nombre"`
+	SSR string `bson:"ssr" json:"ssr"`
+	ganancia int `bson:"ganancia" json:"ganancia"`
+}
+
+type PassengerAverage struct {
+	Jan int `bson:"enero" json:"enero"`
+	Feb int `bson:"febrero" json:"febrero"`
+	Mar int `bson:"marzo" json:"marzo"`
+	Apr int `bson:"abril" json:"abril"`
+	May int `bson:"mayo json:"mayo"`
+	Jun int `bson:"junio" json:"junio"`
+	Jul int `bson:"julio" json:"julio"`
+	Aug int `bson:"agosto" json:"agosto"`
+	Sep int `bson:"septiembre" json:"septiembre"`
+	Oct int `bson:"octubre" json:"octubre"`
+	Nov int `bson:"noviembre" json:"noviembre"`
+	Dec int `bson:"diciembre" json:"diciembre"`
+}
+
+type Statistics struct {
+	RutaMayorGanancia int `bson:"ruta_mayor_ganancia" json:"ruta_mayor_ganancia"`
+	RutaMenorGanancia int `bson:"ruta_menor_ganancia" json:"ruta_menor_ganancia"`
+	RankingAncillaries []AncillariesStatistics `bson:"ranking_ancillaries" json:"ranking_ancillaries"`
+	PromedioPasajeros PassengerAverage `bson:"promedio_pasajeros" json:"promedio_pasajeros"`
 }
 
 // Connect to MongoDB and retrieve the collection needed
