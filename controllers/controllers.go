@@ -168,6 +168,7 @@ func reverse(a []string) {
 }
 
 func SumAncillaries(PA []models.PassengerAncillaryList) (int, int){
+	//This function calculates the price for the ancillaries associated with this passenger.
 	countIda := 0
 	countVuelta := 0
 	for i := 0; i < len(PA); i++{
@@ -183,9 +184,18 @@ func SumAncillaries(PA []models.PassengerAncillaryList) (int, int){
 	return countIda, countVuelta
 }
 
-func SumVuelos (flights []models.ReservationFlight) (int, int){
+func SumVuelos (c *gin.Context, flights []models.ReservationFlight) (int, int){
+	//This function returns the sum of the price of all the tickets associated with this passenger.
 	var tiempoIda int
 	var tiempoVuelta int
+
+	//We check if we have an even number of flights
+	if len(flights) % 2 != 0{
+		c.IndentedJSON(http.StatusBadRequest, "The number of flights has to be even")
+	}
+
+	//Must be a better way to right this but I don't know how
+	//converting the string into int and then calculating the time of the flight to then return the price
 	for i:=0; i<len(flights); i+=2{
 		horasSalidaIda, minutosSalidaIda, _ := strings.Cut(flights[i].HoraSalida, ":")
 		horasLlegadaIda, minutosLlegadaIda, _ := strings.Cut(flights[i].HoraLlegada, ":")
@@ -234,7 +244,7 @@ func CreateReservation(c *gin.Context) {
 		fmt.Println("Calculating Balances")
 		for i := 0; i<len(reserva.Passengers); i++{
 			reserva.Passengers[i].Balances.AncillariesIda, reserva.Passengers[i].Balances.AncillariesVuelta = SumAncillaries(reserva.Passengers[i].Ancillaries)
-			reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(reserva.Vuelos)
+			reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(c, reserva.Vuelos)
 		}
 
 
@@ -281,6 +291,15 @@ func UpdateReservation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// Reseting the pnr and surname
+	reserva.PNR = pnr
+	reserva.Apellido = apellido
+
+	//Calculating the new balances
+	for i := 0; i<len(reserva.Passengers); i++{
+			reserva.Passengers[i].Balances.AncillariesIda, reserva.Passengers[i].Balances.AncillariesVuelta = SumAncillaries(reserva.Passengers[i].Ancillaries)
+			reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(c, reserva.Vuelos)
+		}
 
 	// Call the UpdateReservation function from the models package to remplace the reservation with a other one.
 	response, err := models.UpdateReservation(pnr, apellido, reserva)
@@ -290,7 +309,7 @@ func UpdateReservation(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.IndentedJSON(http.StatusOK, response)
 
 }
 
