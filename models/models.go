@@ -70,7 +70,7 @@ type Passenger struct {
 	Name        string                   `bson:"nombre" json:"nombre"`
 	Apellido    string                   `bson:"apellido" json:"apellido"`
 	Edad        int                      `bson:"edad" json:"edad"`
-	Ancillaries []PassengerAncillaryList `bson:"ancillaries" json:"ancillaries"`
+	Ancillaries PassengerAncillaryList `bson:"ancillaries" json:"ancillaries"`
 	Balances BalancesObj `bson:"balances" json:"balances"`
 }
 

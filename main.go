@@ -17,6 +17,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
+
+var(
+	AncillaryPrice = map[string]int{"BGH":10000, "BGR":30000, "STDF":5000, "PAXS":2000, "PTCR":40000, "AVIH":40000, "SPML":35000, "LNGE":15000, "WIFI":20000}
+)
+
 func main() {
 
 	err := godotenv.Load()
@@ -127,7 +132,6 @@ func main() {
 					if horaLlegada.Before(horaSalida) {
 						horaLlegada = horaLlegada.Add(24 * time.Hour)
 					}
-
 					minutosVuelo := int(horaLlegada.Sub(horaSalida).Minutes())
 
 					precioVuelo := 590 * minutosVuelo
@@ -240,7 +244,7 @@ func main() {
 
 					for i := 0; i < len(vueloIda.Ancillaries); i++ {
 						fmt.Print(i + 1)
-						fmt.Print(". " + vueloIda.Ancillaries[i].Nombre + " $0000\n")
+						fmt.Print(". " + vueloIda.Ancillaries[i].Nombre + " $" + fmt.Sprint(AncillaryPrice[vueloIda.Ancillaries[i].SSR]) + "\n")
 					}
 
 					fmt.Print("\nIngrese los Ancillaries (separados por comas): ")
@@ -272,13 +276,13 @@ func main() {
 						}
 						Pasajero.Ancillaries.Ida = append(Pasajero.Ancillaries.Ida, seleccionAncillary)
 					}
-
+					fmt.Print(Pasajero)
 					if fechaRegreso != "no" {
 						fmt.Println("Ancillares Vuelta: ")
 
 						for i := 0; i < len(vueloVuelta.Ancillaries); i++ {
 							fmt.Print(i + 1)
-							fmt.Print(". " + vueloVuelta.Ancillaries[i].Nombre + " $0000\n")
+							fmt.Print(". " + vueloVuelta.Ancillaries[i].Nombre + " $" + fmt.Sprint(AncillaryPrice[vueloIda.Ancillaries[i].SSR]) + "\n")
 						}
 
 						fmt.Print("\nIngrese los Ancillaries (separados por comas): ")

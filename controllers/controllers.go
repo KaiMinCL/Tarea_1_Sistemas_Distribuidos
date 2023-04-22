@@ -7,8 +7,8 @@ import (
 	"math/rand"
 	"net/http"
 	"strings"
-	"strconv"
 	"github.com/gin-gonic/gin"
+	"time"
 )
 
 var(
@@ -167,65 +167,49 @@ func reverse(a []string) {
 	}
 }
 
-func SumAncillaries(PA []models.PassengerAncillaryList) (int, int){
+func SumAncillaries(PA models.PassengerAncillaryList) (int, int){
 	//This function calculates the price for the ancillaries associated with this passenger.
 	countIda := 0
 	countVuelta := 0
-	for i := 0; i < len(PA); i++{
-		for j := 0; j < len(PA[i].Ida); j++{
-			countIda += AncillaryPrice[PA[i].Ida[j].SSR]*PA[i].Ida[j].Cantidad
-		}
-		for j := 0; j < len(PA[i].Vuelta); j++{
-			countVuelta += AncillaryPrice[PA[i].Vuelta[j].SSR]*PA[i].Vuelta[j].Cantidad
-			fmt.Println(countVuelta, PA[i].Vuelta[j].SSR, PA[i].Vuelta[j].Cantidad)
-		}
+	for j := 0; j < len(PA.Ida); j++{
+		countIda += AncillaryPrice[PA.Ida[j].SSR]*PA.Ida[j].Cantidad
+	}
+	for j := 0; j < len(PA.Vuelta); j++{
+		countVuelta += AncillaryPrice[PA.Vuelta[j].SSR]*PA.Vuelta[j].Cantidad
+		fmt.Println(countVuelta, PA.Vuelta[j].SSR, PA.Vuelta[j].Cantidad)
 	}
 
 	return countIda, countVuelta
 }
 
-func SumVuelos (c *gin.Context, flights []models.ReservationFlight) (int, int){
+func SumVuelos (flights []models.ReservationFlight) (int, int){
 	//This function returns the sum of the price of all the tickets associated with this passenger.
-	var tiempoIda int
-	var tiempoVuelta int
+	var tiempoIda int = 0
+	var tiempoVuelta int = 0
 
-	//We check if we have an even number of flights
-	if len(flights) % 2 != 0{
-		c.IndentedJSON(http.StatusBadRequest, "The number of flights has to be even")
+	horaSalidaIda, _ := time.Parse("15:04", flights[0].HoraSalida)
+	horaLlegadaIda, _ := time.Parse("15:04", flights[0].HoraLlegada)
+
+	if horaLlegadaIda.Before(horaSalidaIda) {
+		horaLlegadaIda = horaLlegadaIda.Add(24 * time.Hour)
 	}
 
-	//Must be a better way to right this but I don't know how
-	//converting the string into int and then calculating the time of the flight to then return the price
-	for i:=0; i<len(flights); i+=2{
-		horasSalidaIda, minutosSalidaIda, _ := strings.Cut(flights[i].HoraSalida, ":")
-		horasLlegadaIda, minutosLlegadaIda, _ := strings.Cut(flights[i].HoraLlegada, ":")
-		horasSalidaVuelta, minutosSalidaVuelta, _ := strings.Cut(flights[i+1].HoraSalida, ":")
-		horasLlegadaVuelta, minutosLlegadaVuelta, _ := strings.Cut(flights[i+1].HoraLlegada, ":")
+	tiempoIda = int(horaLlegadaIda.Sub(horaSalidaIda).Minutes())
 
-		horasSalidaIdaC, _ := strconv.Atoi(horasSalidaIda)
-		horasLlegadaIdaC, _ := strconv.Atoi(horasLlegadaIda)
-		minutosSalidaIdaC, _ := strconv.Atoi(minutosSalidaIda)
-		minutosLlegadaIdaC, _ := strconv.Atoi(minutosLlegadaIda)
-		horasSalidaVueltaC, _ := strconv.Atoi(horasSalidaVuelta)
-		horasLlegadaVueltaC, _ := strconv.Atoi(horasLlegadaVuelta)
-		minutosSalidaVueltaC, _ := strconv.Atoi(minutosSalidaVuelta)
-		minutosLlegadaVueltaC, _ := strconv.Atoi(minutosLlegadaVuelta)
+	if len(flights) == 2{
+		horaSalidaVuelta, _ :=time.Parse("15:04", flights[1].HoraSalida)
+		horaLlegadaVuelta, _ :=time.Parse("15:04", flights[1].HoraLlegada)
 
-		tiempoIda = (1440 * CompareInt(horasSalidaIdaC, horasLlegadaIdaC)) + horasLlegadaIdaC*60+minutosLlegadaIdaC-(horasSalidaIdaC*60+minutosSalidaIdaC)
-		tiempoVuelta = (1440 * CompareInt(horasSalidaVueltaC, horasLlegadaVueltaC)) + horasLlegadaVueltaC*60+minutosLlegadaVueltaC-(horasSalidaVueltaC*60+minutosSalidaVueltaC)
+		if horaLlegadaVuelta.Before(horaSalidaVuelta) {
+			horaLlegadaVuelta = horaLlegadaVuelta.Add(24 * time.Hour)
+		}
 
+		tiempoVuelta = int(horaLlegadaVuelta.Sub(horaSalidaVuelta).Minutes())
+	} else if len(flights) > 2{
+		fmt.Print("There shouldn't be more than tow flights per reservation")
 	}
 
-	return 590*tiempoIda, 590*tiempoVuelta
-}
-
-func CompareInt(a int, b int) int{
-	//returns 1 if a > b 0 otherwise
-	if a>b{
-		return 1
-	} else {
-		return 0
-	}
+	return tiempoIda*590, tiempoVuelta*590
 }
 
 func CreateReservation(c *gin.Context) {
@@ -238,13 +222,10 @@ func CreateReservation(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 	} else {
 
-		fmt.Println("Generating PNR")
-		reserva.PNR = GenerateNewPNR()
-
 		fmt.Println("Calculating Balances")
 		for i := 0; i<len(reserva.Passengers); i++{
 			reserva.Passengers[i].Balances.AncillariesIda, reserva.Passengers[i].Balances.AncillariesVuelta = SumAncillaries(reserva.Passengers[i].Ancillaries)
-			reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(c, reserva.Vuelos)
+			reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(reserva.Vuelos)
 		}
 
 
@@ -298,7 +279,7 @@ func UpdateReservation(c *gin.Context) {
 	//Calculating the new balances
 	for i := 0; i<len(reserva.Passengers); i++{
 			reserva.Passengers[i].Balances.AncillariesIda, reserva.Passengers[i].Balances.AncillariesVuelta = SumAncillaries(reserva.Passengers[i].Ancillaries)
-			reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(c, reserva.Vuelos)
+			reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(reserva.Vuelos)
 		}
 
 	// Call the UpdateReservation function from the models package to remplace the reservation with a other one.
