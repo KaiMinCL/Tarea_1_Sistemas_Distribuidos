@@ -276,7 +276,6 @@ func main() {
 						}
 						Pasajero.Ancillaries.Ida = append(Pasajero.Ancillaries.Ida, seleccionAncillary)
 					}
-					fmt.Print(Pasajero)
 					if fechaRegreso != "no" {
 						fmt.Println("Ancillares Vuelta: ")
 
@@ -329,7 +328,7 @@ func main() {
 					return
 				}
 				http.Post(URL+"/reserva", "application/json", bytes.NewBuffer(JSONString))
-				fmt.Println(Reserva)
+
 
 			case 2:
 				fmt.Println("Obtener reserva")
