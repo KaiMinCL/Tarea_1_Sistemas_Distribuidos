@@ -31,6 +31,7 @@ func main() {
 	router.PUT("/api/reserva", controllers.UpdateReservation)
 	router.DELETE("/api/reserva", controllers.DeleteReservation)
 	router.POST("/api/reserva", controllers.CreateReservation)
+	router.GET("/api/estadisticas", controllers.GetStatistics)
 
 	router.Run(server + ":" + port)
 }
