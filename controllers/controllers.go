@@ -7,8 +7,9 @@ import (
 	"math/rand"
 	"net/http"
 	"strings"
-	"github.com/gin-gonic/gin"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 var(
@@ -170,22 +171,22 @@ func reverse(a []string) {
 	}
 }
 
-func SumAncillaries(PA models.PassengerAncillaryList) (int, int){
+func SumAncillaries(PA models.PassengerAncillaryList) (int, int) {
 	//This function calculates the price for the ancillaries associated with this passenger.
 	countIda := 0
 	countVuelta := 0
-	for j := 0; j < len(PA.Ida); j++{
-		countIda += AncillaryPrice[PA.Ida[j].SSR]*PA.Ida[j].Cantidad
+	for j := 0; j < len(PA.Ida); j++ {
+		countIda += AncillaryPrice[PA.Ida[j].SSR] * PA.Ida[j].Cantidad
 	}
-	for j := 0; j < len(PA.Vuelta); j++{
-		countVuelta += AncillaryPrice[PA.Vuelta[j].SSR]*PA.Vuelta[j].Cantidad
+	for j := 0; j < len(PA.Vuelta); j++ {
+		countVuelta += AncillaryPrice[PA.Vuelta[j].SSR] * PA.Vuelta[j].Cantidad
 		fmt.Println(countVuelta, PA.Vuelta[j].SSR, PA.Vuelta[j].Cantidad)
 	}
 
 	return countIda, countVuelta
 }
 
-func SumVuelos (flights []models.ReservationFlight) (int, int){
+func SumVuelos(flights []models.ReservationFlight) (int, int) {
 	//This function returns the sum of the price of all the tickets associated with this passenger.
 	var tiempoIda int = 0
 	var tiempoVuelta int = 0
@@ -199,20 +200,20 @@ func SumVuelos (flights []models.ReservationFlight) (int, int){
 
 	tiempoIda = int(horaLlegadaIda.Sub(horaSalidaIda).Minutes())
 
-	if len(flights) == 2{
-		horaSalidaVuelta, _ :=time.Parse("15:04", flights[1].HoraSalida)
-		horaLlegadaVuelta, _ :=time.Parse("15:04", flights[1].HoraLlegada)
+	if len(flights) == 2 {
+		horaSalidaVuelta, _ := time.Parse("15:04", flights[1].HoraSalida)
+		horaLlegadaVuelta, _ := time.Parse("15:04", flights[1].HoraLlegada)
 
 		if horaLlegadaVuelta.Before(horaSalidaVuelta) {
 			horaLlegadaVuelta = horaLlegadaVuelta.Add(24 * time.Hour)
 		}
 
 		tiempoVuelta = int(horaLlegadaVuelta.Sub(horaSalidaVuelta).Minutes())
-	} else if len(flights) > 2{
+	} else if len(flights) > 2 {
 		fmt.Print("There shouldn't be more than tow flights per reservation")
 	}
 
-	return tiempoIda*590, tiempoVuelta*590
+	return tiempoIda * 590, tiempoVuelta * 590
 }
 
 func CreateReservation(c *gin.Context) {
@@ -226,11 +227,10 @@ func CreateReservation(c *gin.Context) {
 	} else {
 
 		fmt.Println("Calculating Balances")
-		for i := 0; i<len(reserva.Passengers); i++{
+		for i := 0; i < len(reserva.Passengers); i++ {
 			reserva.Passengers[i].Balances.AncillariesIda, reserva.Passengers[i].Balances.AncillariesVuelta = SumAncillaries(reserva.Passengers[i].Ancillaries)
 			reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(reserva.Vuelos)
 		}
-
 
 		fmt.Println("Creating Reservation")
 
@@ -250,7 +250,7 @@ func GetReservations(c *gin.Context) {
 	apellido := c.Query("apellido")
 
 	// Call the GetReservation func to get the said reservation using the parameters
-	reservas, err := models.GetReservation(pnr, apellido)
+	reserva, err := models.GetReservation(pnr, apellido)
 
 	if err != nil {
 		fmt.Println(err)
@@ -258,7 +258,7 @@ func GetReservations(c *gin.Context) {
 		c.IndentedJSON(http.StatusNotFound, strings.TrimSuffix(fmt.Sprintln(err), "\n"))
 
 	} else {
-		c.IndentedJSON(http.StatusOK, gin.H{"reservas": reservas})
+		c.IndentedJSON(http.StatusOK, gin.H{"vuelos": reserva.Vuelos, "pasajeros": reserva.Passengers})
 	}
 }
 
@@ -280,10 +280,10 @@ func UpdateReservation(c *gin.Context) {
 	reserva.Apellido = apellido
 
 	//Calculating the new balances
-	for i := 0; i<len(reserva.Passengers); i++{
-			reserva.Passengers[i].Balances.AncillariesIda, reserva.Passengers[i].Balances.AncillariesVuelta = SumAncillaries(reserva.Passengers[i].Ancillaries)
-			reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(reserva.Vuelos)
-		}
+	for i := 0; i < len(reserva.Passengers); i++ {
+		reserva.Passengers[i].Balances.AncillariesIda, reserva.Passengers[i].Balances.AncillariesVuelta = SumAncillaries(reserva.Passengers[i].Ancillaries)
+		reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(reserva.Vuelos)
+	}
 
 	// Call the UpdateReservation function from the models package to remplace the reservation with a other one.
 	response, err := models.UpdateReservation(pnr, apellido, reserva)
