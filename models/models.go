@@ -67,22 +67,21 @@ type PassengerAncillaryList struct {
 
 // Define the Passengers struct, which represents a passenger who has booked a flight
 type Passenger struct {
-	Name        string                   `bson:"nombre" json:"nombre"`
-	Apellido    string                   `bson:"apellido" json:"apellido"`
-	Edad        int                      `bson:"edad" json:"edad"`
+	Name        string                 `bson:"nombre" json:"nombre"`
+	Apellido    string                 `bson:"apellido" json:"apellido"`
+	Edad        int                    `bson:"edad" json:"edad"`
 	Ancillaries PassengerAncillaryList `bson:"ancillaries" json:"ancillaries"`
-	Balances BalancesObj `bson:"balances" json:"balances"`
+	Balances    BalancesObj            `bson:"balances" json:"balances"`
 }
 
-type BalancesObj struct{
-	AncillariesIda int `bson:"ancillaries_ida" json:"ancillaries_ida"`
-	VueloIda int `bson:"vuelo_ida" json:"vuelo_ida"`
+type BalancesObj struct {
+	AncillariesIda    int `bson:"ancillaries_ida" json:"ancillaries_ida"`
+	VueloIda          int `bson:"vuelo_ida" json:"vuelo_ida"`
 	AncillariesVuelta int `bson:"ancillaries_vuelta" json:"ancillaries_vuelta"`
-	VueloVuelta int `bson:"vuelo_vuelta" json:"vuelo_vuelta"`
+	VueloVuelta       int `bson:"vuelo_vuelta" json:"vuelo_vuelta"`
 }
 
 // Define the Reservations struct, which represents a reservation made by one or more passengers for one or more flights
-
 
 type Reservation struct {
 	PNR        string              `bson:"PNR" json:"PNR"`
@@ -92,9 +91,9 @@ type Reservation struct {
 }
 
 type AncillariesStatistics struct {
-	Nombre string `bson:"nombre" json:"nombre"`
-	SSR string `bson:"ssr" json:"ssr"`
-	ganancia int `bson:"ganancia" json:"ganancia"`
+	Nombre   string `bson:"nombre" json:"nombre"`
+	SSR      string `bson:"ssr" json:"ssr"`
+	ganancia int    `bson:"ganancia" json:"ganancia"`
 }
 
 type PassengerAverage struct {
@@ -113,10 +112,10 @@ type PassengerAverage struct {
 }
 
 type Statistics struct {
-	RutaMayorGanancia int `bson:"ruta_mayor_ganancia" json:"ruta_mayor_ganancia"`
-	RutaMenorGanancia int `bson:"ruta_menor_ganancia" json:"ruta_menor_ganancia"`
+	RutaMayorGanancia  int                     `bson:"ruta_mayor_ganancia" json:"ruta_mayor_ganancia"`
+	RutaMenorGanancia  int                     `bson:"ruta_menor_ganancia" json:"ruta_menor_ganancia"`
 	RankingAncillaries []AncillariesStatistics `bson:"ranking_ancillaries" json:"ranking_ancillaries"`
-	PromedioPasajeros PassengerAverage `bson:"promedio_pasajeros" json:"promedio_pasajeros"`
+	PromedioPasajeros  PassengerAverage        `bson:"promedio_pasajeros" json:"promedio_pasajeros"`
 }
 
 // Connect to MongoDB and retrieve the collection needed
@@ -150,7 +149,6 @@ func GetVuelos(origenVuelo string, destinoVuelo string, fechaVuelo string) ([]Fl
 
 	// Define a filter to find all flights with the specified origen, destino, and fecha
 	filter := bson.M{"origen": origenVuelo, "destino": destinoVuelo, "fecha": fechaVuelo}
-	fmt.Println(origenVuelo, destinoVuelo, fechaVuelo)
 
 	// Find all the flights that match the filter
 	cur, err := collection.Find(context.Background(), filter)
@@ -258,7 +256,7 @@ func CreateReservation(reservation Reservation) (map[string]interface{}, error) 
 func GetReservation(pnr string, apellido string) (Reservation, error) {
 	collection := getDatabaseCollection("reservas")
 	var reservation Reservation
-	err := collection.FindOne(context.Background(), bson.M{"PNR": pnr, "apellido": apellido}).Decode(&reservation)
+	err := collection.FindOne(context.Background(), bson.M{"PNR": pnr, "apellido": bson.M{"$regex": apellido, "$options": "i"}}).Decode(&reservation)
 	return reservation, err
 }
 
