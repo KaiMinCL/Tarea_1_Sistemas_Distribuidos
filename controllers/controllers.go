@@ -338,8 +338,6 @@ func Min(data map[string]int) string{
 	return minIndex
 }
 
-
-
 func GetStatistics(c *gin.Context){
 	var(
 		balancesVuelo = make(map[string]int)

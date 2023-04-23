@@ -93,7 +93,7 @@ type Reservation struct {
 type AncillariesStatistics struct {
 	Nombre   string `bson:"nombre" json:"nombre"`
 	SSR      string `bson:"ssr" json:"ssr"`
-	ganancia int    `bson:"ganancia" json:"ganancia"`
+	Ganancia int    `bson:"ganancia" json:"ganancia"`
 }
 
 type PassengerAverage struct {
@@ -101,7 +101,7 @@ type PassengerAverage struct {
 	Feb int `bson:"febrero" json:"febrero"`
 	Mar int `bson:"marzo" json:"marzo"`
 	Apr int `bson:"abril" json:"abril"`
-	May int `bson:"mayo json:"mayo"`
+	May int `bson:"mayo" json:"mayo"`
 	Jun int `bson:"junio" json:"junio"`
 	Jul int `bson:"julio" json:"julio"`
 	Aug int `bson:"agosto" json:"agosto"`
@@ -112,8 +112,8 @@ type PassengerAverage struct {
 }
 
 type Statistics struct {
-	RutaMayorGanancia  int                     `bson:"ruta_mayor_ganancia" json:"ruta_mayor_ganancia"`
-	RutaMenorGanancia  int                     `bson:"ruta_menor_ganancia" json:"ruta_menor_ganancia"`
+	RutaMayorGanancia  string                     `bson:"ruta_mayor_ganancia" json:"ruta_mayor_ganancia"`
+	RutaMenorGanancia  string                     `bson:"ruta_menor_ganancia" json:"ruta_menor_ganancia"`
 	RankingAncillaries []AncillariesStatistics `bson:"ranking_ancillaries" json:"ranking_ancillaries"`
 	PromedioPasajeros  PassengerAverage        `bson:"promedio_pasajeros" json:"promedio_pasajeros"`
 }
