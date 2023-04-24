@@ -63,7 +63,6 @@ func main() {
 	)
 
 	for true {
-		clearScreen()
 
 		fmt.Println("Menu")
 		time.Sleep(25 * time.Millisecond)
@@ -107,10 +106,10 @@ func main() {
 				clearScreen()
 				// ALL OF THIS IS FOR CREATING A RESERVATION
 				// It remains the following functionalities:
-				// - check if there are seats left on the plane before selling them
-				// - Remove capacity for every passenger sold on the flights
-				// - Remove capacity for every ancillary sold on the flight
-				// - Update mongoDB with the updated flight information
+				// - check if there are seats left on the plane before selling them CHECK
+				// - Remove capacity for every passenger sold on the flights CHECK
+				// - Remove capacity for every ancillary sold on the flight CHECK
+				// - Update mongoDB with the updated flight information CHECK
 
 				var (
 					fechaIda          string
@@ -173,6 +172,15 @@ func main() {
 					break
 				}
 
+				// Checks if there's seats on the flight
+				for i, vuelo := range vuelos {
+
+					if vuelo.Avion.StockDePasajeros == 0 {
+						vuelos = append(vuelos[:i], vuelos[i+1:]...)
+						i -= 1
+					}
+				}
+
 				// Check if the vuelos slice is empty
 				if len(vuelos) == 0 {
 					fmt.Println("No hay vuelos disponibles para la fecha de ida")
@@ -210,6 +218,8 @@ func main() {
 
 				vueloIda := vuelos[opcionIda-1]
 
+				vueloIda.Avion.StockDePasajeros -= 1
+
 				vueloReserva := models.ReservationFlight{
 					NumeroVuelo: vueloIda.NumeroVuelo,
 					Origen:      origen,
@@ -243,6 +253,15 @@ func main() {
 					if err != nil {
 						fmt.Println("error:", err)
 						break
+					}
+
+					// Checks if there's seats on the flight
+					for i, vuelo := range vuelos {
+
+						if vuelo.Avion.StockDePasajeros == 0 {
+							vuelos = append(vuelos[:i], vuelos[i+1:]...)
+							i -= 1
+						}
 					}
 
 					// Check if the vuelos slice is empty
@@ -281,6 +300,8 @@ func main() {
 					fmt.Scan(&opcionVuelta)
 
 					vueloVuelta = vuelos[opcionVuelta-1]
+
+					vueloVuelta.Avion.StockDePasajeros -= 1
 
 					vueloReserva := models.ReservationFlight{
 						NumeroVuelo: vueloVuelta.NumeroVuelo,
@@ -324,7 +345,7 @@ func main() {
 					for i := 0; i < len(vueloIda.Ancillaries); i++ {
 						time.Sleep(50 * time.Millisecond)
 						fmt.Print("\t", i+1)
-						fmt.Print(". " + vueloIda.Ancillaries[i].Nombre + " $" + fmt.Sprint(AncillaryPrice[vueloIda.Ancillaries[i].SSR]) + "\n")
+						fmt.Print(". " + vueloIda.Ancillaries[i].Nombre + " | Stock: " + fmt.Sprint(vueloIda.Ancillaries[i].Stock) + " | Valor: $" + fmt.Sprint(AncillaryPrice[vueloIda.Ancillaries[i].SSR]) + "\n")
 					}
 
 					var seleccionAncillaries string
@@ -345,20 +366,29 @@ func main() {
 
 						seleccionAncillary.SSR = vueloIda.Ancillaries[seleccionArray[i]].SSR
 
-						for j := 0; j <= len(Pasajero.Ancillaries.Ida); j++ {
-							if j == len(Pasajero.Ancillaries.Ida) {
-								seleccionAncillary.Cantidad = 1
-								break
-							}
+						if vueloIda.Ancillaries[seleccionArray[i]].Stock == 0 {
+							fmt.Println("No existe stock para el Ancillary: " + vueloIda.Ancillaries[seleccionArray[i]].Nombre)
+							break
+						} else {
+							for j := 0; j <= len(Pasajero.Ancillaries.Ida); j++ {
 
-							if seleccionAncillary.SSR == Pasajero.Ancillaries.Ida[j].SSR {
-								Pasajero.Ancillaries.Ida[j].Cantidad += 1
-								break
-							}
+								vueloIda.Ancillaries[seleccionArray[i]].Stock -= 1
 
+								if j == len(Pasajero.Ancillaries.Ida) {
+									seleccionAncillary.Cantidad = 1
+									break
+								}
+
+								if seleccionAncillary.SSR == Pasajero.Ancillaries.Ida[j].SSR {
+									Pasajero.Ancillaries.Ida[j].Cantidad += 1
+									break
+								}
+
+							}
 						}
 						Pasajero.Ancillaries.Ida = append(Pasajero.Ancillaries.Ida, seleccionAncillary)
 					}
+
 					if fechaRegreso != "no" {
 						fmt.Println("Ancillares Vuelta: ")
 
@@ -366,7 +396,7 @@ func main() {
 							time.Sleep(50 * time.Millisecond)
 
 							fmt.Print("\t", i+1)
-							fmt.Print(". " + vueloVuelta.Ancillaries[i].Nombre + " $" + fmt.Sprint(AncillaryPrice[vueloIda.Ancillaries[i].SSR]) + "\n")
+							fmt.Print(". " + vueloVuelta.Ancillaries[i].Nombre + " | Stock: " + fmt.Sprint(vueloVuelta.Ancillaries[i].Stock) + " | Valor: $" + fmt.Sprint(AncillaryPrice[vueloVuelta.Ancillaries[i].SSR]) + "\n")
 						}
 
 						var seleccionAncillaries string
@@ -388,18 +418,26 @@ func main() {
 
 							seleccionAncillary.SSR = vueloVuelta.Ancillaries[seleccionArray[i]].SSR
 
-							for j := 0; j <= len(Pasajero.Ancillaries.Vuelta); j++ {
-								if j == len(Pasajero.Ancillaries.Vuelta) {
-									seleccionAncillary.Cantidad = 1
-									break
-								}
+							if vueloVuelta.Ancillaries[seleccionArray[i]].Stock == 0 {
+								fmt.Println("No existe stock para el Ancillary: " + vueloVuelta.Ancillaries[seleccionArray[i]].Nombre)
+								break
+							} else {
+								for j := 0; j <= len(Pasajero.Ancillaries.Vuelta); j++ {
 
-								if seleccionAncillary.SSR == Pasajero.Ancillaries.Vuelta[j].SSR {
-									Pasajero.Ancillaries.Vuelta[j].Cantidad += 1
-									break
-								}
+									vueloVuelta.Ancillaries[seleccionArray[i]].Stock -= 1
 
+									if j == len(Pasajero.Ancillaries.Vuelta) {
+										seleccionAncillary.Cantidad = 1
+										break
+									}
+
+									if seleccionAncillary.SSR == Pasajero.Ancillaries.Vuelta[j].SSR {
+										Pasajero.Ancillaries.Vuelta[j].Cantidad += 1
+										break
+									}
+								}
 							}
+
 							Pasajero.Ancillaries.Vuelta = append(Pasajero.Ancillaries.Vuelta, seleccionAncillary)
 						}
 
@@ -439,6 +477,64 @@ func main() {
 					return
 				}
 
+				var update struct {
+					StockDePasajeros int `json:"stock_de_pasajeros"`
+				}
+
+				update.StockDePasajeros = vueloIda.Avion.StockDePasajeros
+
+				JSONString, err = json.Marshal(update)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+
+				req, err := http.NewRequest("PUT", URL+"/vuelo?numero_vuelo="+vueloIda.NumeroVuelo+"&origen="+vueloIda.Origen+"&destino="+vueloIda.Destino+"&fecha="+vueloIda.Fecha, bytes.NewBuffer(JSONString))
+
+				if err != nil {
+					// Handle error
+					break
+				}
+
+				client := &http.Client{}
+				resp, err = client.Do(req)
+
+				if err != nil {
+					// Handle error
+					break
+				}
+				defer resp.Body.Close()
+
+				if fechaRegreso != "no" {
+
+					var update struct {
+						StockDePasajeros int `json:"stock_de_pasajeros"`
+					}
+
+					update.StockDePasajeros = vueloVuelta.Avion.StockDePasajeros
+
+					JSONString, err = json.Marshal(update)
+					if err != nil {
+						fmt.Println(err)
+						return
+					}
+
+					req, err = http.NewRequest("PUT", URL+"/vuelo?numero_vuelo="+vueloVuelta.NumeroVuelo+"&origen="+vueloVuelta.Origen+"&destino="+vueloVuelta.Destino+"&fecha="+vueloVuelta.Fecha, bytes.NewBuffer(JSONString))
+
+					if err != nil {
+						// Handle error
+						break
+					}
+
+					client = &http.Client{}
+					resp, err = client.Do(req)
+
+					if err != nil {
+						// Handle error
+						break
+					}
+					defer resp.Body.Close()
+				}
 				waitAnimation()
 				clearScreen()
 
@@ -453,6 +549,8 @@ func main() {
 				fmt.Println("\nEl costo total de la reserva fue de: $" + fmt.Sprint(costoTotal))
 
 			case 2:
+
+				// ALL OF THIS IS FOR VIEWING A RESERVATION
 
 				var (
 					reserva models.Reservation
@@ -528,6 +626,8 @@ func main() {
 
 			case 3:
 
+				// ALL OF THIS IS FOR MODIFYING A RESERVATION
+
 				var (
 					reserva models.Reservation
 				)
@@ -583,6 +683,16 @@ func main() {
 
 				switch modifyOption {
 				case 1:
+
+					// ALL OF THIS IS FOR MODIFYING THE FLIGHT
+					// It remains the following functionalities:
+					// - check if there are seats left on the NEW PLANE before selling them CHECK
+					// - Remove capacity for every passenger sold on the flights CHECK
+					// - ADD CAPACITY to the plane canceled CHECK
+					// - Remove stock to every ancillary sold on the NEW FLIGHT CHECK
+					// - ADD stock to every ancillary sold on the NEW FLIGHT CHECK
+					// - Update mongoDB with the updated flight information CHECK
+
 					waitAnimation()
 					clearScreen()
 					fmt.Println("Vuelos: ")
@@ -610,9 +720,6 @@ func main() {
 
 					resp, err := http.Get(URL + "/vuelo?origen=" + reserva.Vuelos[flightReserved].Origen + "&destino=" + reserva.Vuelos[flightReserved].Destino + "&fecha=" + fecha)
 
-					waitAnimation()
-					clearScreen()
-
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -625,6 +732,9 @@ func main() {
 						break
 					}
 
+					waitAnimation()
+					clearScreen()
+
 					var vuelos []models.Flight
 
 					// parse the JSON response into the vuelos slice
@@ -632,6 +742,16 @@ func main() {
 					if err != nil {
 						fmt.Println("error:", err)
 						break
+					}
+
+					// Checks if there's seats on the flights
+					for i, vuelo := range vuelos {
+
+						if vuelo.Avion.StockDePasajeros < len(reserva.Passengers) || (vuelo.NumeroVuelo == reserva.Vuelos[flightReserved].NumeroVuelo && vuelo.Fecha == reserva.Vuelos[flightReserved].Fecha) {
+							vuelos = append(vuelos[:i], vuelos[i+1:]...)
+							i -= 1
+						}
+
 					}
 
 					// Check if the vuelos slice is empty
@@ -654,7 +774,7 @@ func main() {
 						}
 						minutosVuelo := int(horaLlegada.Sub(horaSalida).Minutes())
 
-						precioVuelo := 590 * minutosVuelo
+						precioVuelo := 590*minutosVuelo + 20000
 						fmt.Print(i + 1)
 						fmt.Print(". " + vuelos[i].NumeroVuelo + " " + vuelos[i].HoraSalida + " - " + vuelos[i].HoraLlegada + " $")
 						fmt.Print(precioVuelo, "\n")
@@ -666,16 +786,113 @@ func main() {
 					fmt.Scan(&flightOption)
 					time.Sleep(25 * time.Millisecond)
 
-					flightOption -= 1
+					nuevoVuelo := vuelos[flightOption-1]
 
-					vuelo := vuelos[flightOption]
+					resp, err = http.Get(URL + "/vuelo?origen=" + reserva.Vuelos[flightReserved].Origen + "&destino=" + reserva.Vuelos[flightReserved].Destino + "&fecha=" + reserva.Vuelos[flightReserved].Fecha)
+
+					if err != nil {
+						log.Fatal(err)
+					}
+					defer resp.Body.Close()
+
+					// Read the response body
+					body, err = ioutil.ReadAll(resp.Body)
+					if err != nil {
+						fmt.Println("error:", err)
+						break
+					}
+
+					// parse the JSON response into the vuelos slice
+					err = json.Unmarshal(body, &vuelos)
+					if err != nil {
+						fmt.Println("error:", err)
+						break
+					}
+
+					var vueloViejo models.Flight
+
+					for _, vuelo := range vuelos {
+
+						if vuelo.NumeroVuelo == reserva.Vuelos[flightReserved].NumeroVuelo {
+							vueloViejo = vuelos[0]
+						}
+
+					}
+
+					/*vueloViejo.Avion.StockDePasajeros += len(reserva.Passengers)
+					nuevoVuelo.Avion.StockDePasajeros -= len(reserva.Passengers)
+
+					for i := 0; i < len(reserva.Passengers); i++ {
+						if flightReserved == 0 {
+							for j := 0; j < len(reserva.Passengers[i].Ancillaries.Ida); j++ {
+								ancillary := models.FlightAncillary{
+									Nombre: "",
+									Stock:  reserva.Passengers[i].Ancillaries.Ida[j].Cantidad,
+									SSR:    reserva.Passengers[i].Ancillaries.Ida[j].SSR,
+								}
+
+								for _, ancillaryViejo := range vueloViejo.Ancillaries {
+									if ancillaryViejo.SSR == ancillary.SSR {
+										ancillaryViejo.Stock += ancillary.Stock
+										for _, ancillaryNuevo := range nuevoVuelo.Ancillaries {
+											var updated = 0
+											if ancillaryNuevo.SSR == ancillary.SSR {
+												if ancillaryNuevo.Stock > 0 {
+													ancillaryNuevo.Stock -= ancillary.Stock
+												}
+												updated = 1
+											}
+											if updated == 0 {
+												ancillary.Nombre = ancillaryViejo.Nombre
+												ancillary.Stock = 0
+												nuevoVuelo.Ancillaries = append(nuevoVuelo.Ancillaries, ancillary)
+											}
+										}
+									}
+
+								}
+
+							}
+
+						} else {
+							for j := 0; j < len(reserva.Passengers[i].Ancillaries.Vuelta); j++ {
+								ancillary := models.FlightAncillary{
+									Nombre: "",
+									Stock:  reserva.Passengers[i].Ancillaries.Vuelta[j].Cantidad,
+									SSR:    reserva.Passengers[i].Ancillaries.Vuelta[j].SSR,
+								}
+
+								for _, ancillaryViejo := range vueloViejo.Ancillaries {
+									if ancillaryViejo.SSR == ancillary.SSR {
+										ancillaryViejo.Stock += ancillary.Stock
+										for _, ancillaryNuevo := range nuevoVuelo.Ancillaries {
+											var updated = 0
+											if ancillaryNuevo.SSR == ancillary.SSR {
+												if ancillaryNuevo.Stock > 0 {
+													ancillaryNuevo.Stock -= ancillary.Stock
+												}
+												updated = 1
+											}
+											if updated == 0 {
+												ancillary.Nombre = ancillaryViejo.Nombre
+												ancillary.Stock = 0
+												nuevoVuelo.Ancillaries = append(nuevoVuelo.Ancillaries, ancillary)
+											}
+										}
+									}
+
+								}
+							}
+
+						}
+					}*/
 
 					vueloReserva := models.ReservationFlight{
-						NumeroVuelo: vuelo.NumeroVuelo,
-						Origen:      vuelo.Origen,
-						Destino:     vuelo.Destino,
-						HoraSalida:  vuelo.HoraSalida,
-						HoraLlegada: vuelo.HoraLlegada,
+						NumeroVuelo: nuevoVuelo.NumeroVuelo,
+						Origen:      nuevoVuelo.Origen,
+						Destino:     nuevoVuelo.Destino,
+						HoraSalida:  nuevoVuelo.HoraSalida,
+						HoraLlegada: nuevoVuelo.HoraLlegada,
 						Fecha:       fecha,
 					}
 					reserva.Vuelos[flightReserved] = vueloReserva
@@ -692,7 +909,7 @@ func main() {
 					clearScreen()
 
 					if err != nil {
-						// Handle error
+						fmt.Println("Error:", err)
 						break
 					}
 
@@ -700,7 +917,59 @@ func main() {
 					resp, err = client.Do(req)
 
 					if err != nil {
-						// Handle error
+						fmt.Println("Error:", err)
+						break
+					}
+					defer resp.Body.Close()
+
+					var update struct {
+						StockDePasajeros int `json:"stock_de_pasajeros"`
+					}
+
+					update.StockDePasajeros = vueloViejo.Avion.StockDePasajeros
+
+					JSONString, err = json.Marshal(update)
+					if err != nil {
+						fmt.Println("Error:", err)
+						return
+					}
+
+					req, err = http.NewRequest("PUT", URL+"/vuelo?numero_vuelo="+vueloViejo.NumeroVuelo+"&origen="+vueloViejo.Origen+"&destino="+vueloViejo.Destino+"&fecha="+vueloViejo.Fecha, bytes.NewBuffer(JSONString))
+
+					if err != nil {
+						fmt.Println("Error:", err)
+						break
+					}
+
+					client = &http.Client{}
+					resp, err = client.Do(req)
+
+					if err != nil {
+						fmt.Println("Error:", err)
+						break
+					}
+					defer resp.Body.Close()
+
+					update.StockDePasajeros = nuevoVuelo.Avion.StockDePasajeros
+
+					JSONString, err = json.Marshal(update)
+					if err != nil {
+						fmt.Println("Error:", err)
+						return
+					}
+
+					req, err = http.NewRequest("PUT", URL+"/vuelo?numero_vuelo="+nuevoVuelo.NumeroVuelo+"&origen="+nuevoVuelo.Origen+"&destino="+nuevoVuelo.Destino+"&fecha="+nuevoVuelo.Fecha, bytes.NewBuffer(JSONString))
+
+					if err != nil {
+						fmt.Println("Error:", err)
+						break
+					}
+
+					client = &http.Client{}
+					resp, err = client.Do(req)
+
+					if err != nil {
+						fmt.Println("Error:", err)
 						break
 					}
 					defer resp.Body.Close()
@@ -714,6 +983,11 @@ func main() {
 					fmt.Scanln(&input)
 
 				case 2:
+
+					// ALL OF THIS IS FOR ADDING ANCILLARIES TO THE FLIGHT
+					// It remains the following functionalities:
+					// - Remove stock to every new ancillary sold CHECK
+					// - Update mongoDB with the updated flight information
 
 					waitAnimation()
 					clearScreen()
@@ -766,15 +1040,16 @@ func main() {
 
 					for i := 0; i < len(vuelos[0].Ancillaries); i++ {
 						time.Sleep(50 * time.Millisecond)
-						fmt.Print(i + 1)
+						fmt.Print("\t", i+1)
 						fmt.Print(". " + vuelos[0].Ancillaries[i].Nombre + " $" + fmt.Sprint(AncillaryPrice[vuelos[0].Ancillaries[i].SSR]) + "\n")
 					}
 
-					fmt.Println("Pasajeros: ")
+					fmt.Println("\nPasajeros: ")
+
 					for i := 0; i < len(reserva.Passengers); i++ {
 						time.Sleep(50 * time.Millisecond)
 
-						fmt.Println(reserva.Passengers[i].Name, reserva.Passengers[i].Edad)
+						fmt.Println("\t", reserva.Passengers[i].Name, reserva.Passengers[i].Edad)
 						fmt.Println("Ancillares ida:")
 
 						fmt.Print("\nIngrese los Ancillaries (separados por comas): ")
@@ -793,18 +1068,26 @@ func main() {
 
 							seleccionAncillary.SSR = vuelos[0].Ancillaries[seleccionArray[j]].SSR
 
-							for k := 0; k <= len(reserva.Passengers[i].Ancillaries.Ida); k++ {
-								if k == len(reserva.Passengers[i].Ancillaries.Ida) {
-									seleccionAncillary.Cantidad = 1
-									reserva.Passengers[i].Ancillaries.Ida = append(reserva.Passengers[i].Ancillaries.Ida, seleccionAncillary)
-									break
-								}
+							if vuelos[0].Ancillaries[seleccionArray[i]].Stock == 0 {
+								fmt.Println("No existe stock para el Ancillary: " + vuelos[0].Ancillaries[seleccionArray[i]].Nombre)
+								break
+							} else {
+								for k := 0; k <= len(reserva.Passengers[i].Ancillaries.Ida); k++ {
 
-								if seleccionAncillary.SSR == reserva.Passengers[i].Ancillaries.Ida[k].SSR {
-									reserva.Passengers[i].Ancillaries.Ida[k].Cantidad += 1
-									break
-								}
+									vuelos[0].Ancillaries[seleccionArray[j]].Stock -= 1
 
+									if k == len(reserva.Passengers[i].Ancillaries.Ida) {
+										seleccionAncillary.Cantidad = 1
+										reserva.Passengers[i].Ancillaries.Ida = append(reserva.Passengers[i].Ancillaries.Ida, seleccionAncillary)
+										break
+									}
+
+									if seleccionAncillary.SSR == reserva.Passengers[i].Ancillaries.Ida[k].SSR {
+										reserva.Passengers[i].Ancillaries.Ida[k].Cantidad += 1
+										break
+									}
+
+								}
 							}
 
 						}
@@ -828,18 +1111,26 @@ func main() {
 
 								seleccionAncillary.SSR = vuelos[0].Ancillaries[seleccionArray[j]].SSR
 
-								for k := 0; k <= len(reserva.Passengers[i].Ancillaries.Vuelta); k++ {
-									if k == len(reserva.Passengers[i].Ancillaries.Vuelta) {
-										seleccionAncillary.Cantidad = 1
-										reserva.Passengers[i].Ancillaries.Vuelta = append(reserva.Passengers[i].Ancillaries.Vuelta, seleccionAncillary)
-										break
-									}
+								if vuelos[0].Ancillaries[seleccionArray[i]].Stock == 0 {
+									fmt.Println("No existe stock para el Ancillary: " + vuelos[0].Ancillaries[seleccionArray[i]].Nombre)
+									break
+								} else {
+									for k := 0; k <= len(reserva.Passengers[i].Ancillaries.Vuelta); k++ {
 
-									if seleccionAncillary.SSR == reserva.Passengers[i].Ancillaries.Vuelta[k].SSR {
-										reserva.Passengers[i].Ancillaries.Vuelta[k].Cantidad += 1
-										break
-									}
+										vuelos[0].Ancillaries[seleccionArray[j]].Stock -= 1
 
+										if k == len(reserva.Passengers[i].Ancillaries.Vuelta) {
+											seleccionAncillary.Cantidad = 1
+											reserva.Passengers[i].Ancillaries.Vuelta = append(reserva.Passengers[i].Ancillaries.Ida, seleccionAncillary)
+											break
+										}
+
+										if seleccionAncillary.SSR == reserva.Passengers[i].Ancillaries.Vuelta[k].SSR {
+											reserva.Passengers[i].Ancillaries.Vuelta[k].Cantidad += 1
+											break
+										}
+
+									}
 								}
 
 							}
@@ -870,6 +1161,34 @@ func main() {
 						// Handle error
 					}
 					defer resp.Body.Close()
+
+					/*var update struct {
+						StockDePasajeros int `json:"stock_de_pasajeros"`
+					}
+
+					update.StockDePasajeros = vuelos[0].Avion.StockDePasajeros
+
+					JSONString, err = json.Marshal(update)
+					if err != nil {
+						fmt.Println(err)
+						return
+					}
+
+					req, err = http.NewRequest("PUT", URL+"/vuelo?numero_vuelo="+vuelos[0].NumeroVuelo+"&origen="+vuelos[0].Origen+"&destino="+vuelos[0].Destino+"&fecha="+vuelos[0].Fecha, bytes.NewBuffer(JSONString))
+
+					if err != nil {
+						// Handle error
+						break
+					}
+
+					client = &http.Client{}
+					resp, err = client.Do(req)
+
+					if err != nil {
+						// Handle error
+						break
+					}
+					defer resp.Body.Close()*/
 
 					fmt.Println("¡La reserva fue modificada exitosamente!")
 
