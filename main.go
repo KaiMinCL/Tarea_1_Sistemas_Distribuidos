@@ -410,6 +410,11 @@ func main() {
 
 				Reserva.Passengers = Pasajeros
 				Reserva.PNR = controllers.GenerateNewPNR()
+				for i := 0; i < len(Reserva.Passengers); i++ {
+					Reserva.Passengers[i].Balances.AncillariesIda, Reserva.Passengers[i].Balances.AncillariesVuelta = controllers.SumAncillaries(Reserva.Passengers[i].Ancillaries)
+					Reserva.Passengers[i].Balances.VueloIda, Reserva.Passengers[i].Balances.VueloVuelta = controllers.SumVuelos(Reserva.Vuelos)
+				}
+
 
 				JSONString, err := json.Marshal(Reserva)
 				if err != nil {
@@ -451,6 +456,13 @@ func main() {
 				}
 
 				fmt.Println("\nEl costo total de la reserva fue de: $" + fmt.Sprint(costoTotal))
+
+				fmt.Print("\nPresione cualquier tecla para volver al menu principal...")
+				bufio.NewReader(os.Stdin).ReadString('\n')
+
+				var input string
+				fmt.Scanln(&input)
+
 
 			case 2:
 
@@ -640,6 +652,7 @@ func main() {
 						break
 					}
 
+					var precioVuelo int
 					// print out the vuelos slice to verify that it was parsed correctly
 					for i := 0; i < len(vuelos); i++ {
 						time.Sleep(50 * time.Millisecond)
@@ -654,7 +667,7 @@ func main() {
 						}
 						minutosVuelo := int(horaLlegada.Sub(horaSalida).Minutes())
 
-						precioVuelo := 590 * minutosVuelo
+						precioVuelo = 590 * minutosVuelo + 20000
 						fmt.Print(i + 1)
 						fmt.Print(". " + vuelos[i].NumeroVuelo + " " + vuelos[i].HoraSalida + " - " + vuelos[i].HoraLlegada + " $")
 						fmt.Print(precioVuelo, "\n")
@@ -679,6 +692,14 @@ func main() {
 						Fecha:       fecha,
 					}
 					reserva.Vuelos[flightReserved] = vueloReserva
+					for i := 0; i < len(reserva.Passengers); i++ {
+						if flightReserved == 0 {
+							reserva.Passengers[i].Balances.VueloIda = precioVuelo
+						} else {
+							reserva.Passengers[i].Balances.VueloVuelta = precioVuelo
+						}
+					}
+
 
 					JSONString, err := json.Marshal(reserva)
 					if err != nil {
@@ -797,11 +818,13 @@ func main() {
 								if k == len(reserva.Passengers[i].Ancillaries.Ida) {
 									seleccionAncillary.Cantidad = 1
 									reserva.Passengers[i].Ancillaries.Ida = append(reserva.Passengers[i].Ancillaries.Ida, seleccionAncillary)
+									reserva.Passengers[i].Balances.AncillariesIda += AncillaryPrice[reserva.Passengers[i].Ancillaries.Ida[k].SSR]
 									break
 								}
 
 								if seleccionAncillary.SSR == reserva.Passengers[i].Ancillaries.Ida[k].SSR {
 									reserva.Passengers[i].Ancillaries.Ida[k].Cantidad += 1
+									reserva.Passengers[i].Balances.AncillariesIda += AncillaryPrice[reserva.Passengers[i].Ancillaries.Ida[k].SSR]
 									break
 								}
 
@@ -832,6 +855,7 @@ func main() {
 									if k == len(reserva.Passengers[i].Ancillaries.Vuelta) {
 										seleccionAncillary.Cantidad = 1
 										reserva.Passengers[i].Ancillaries.Vuelta = append(reserva.Passengers[i].Ancillaries.Vuelta, seleccionAncillary)
+
 										break
 									}
 
@@ -846,6 +870,7 @@ func main() {
 
 						}
 
+						reserva.Passengers[i].Balances.AncillariesIda, reserva.Passengers[i].Balances.AncillariesVuelta = controllers.SumAncillaries(reserva.Passengers[i].Ancillaries)
 					}
 
 					JSONString, err := json.Marshal(reserva)

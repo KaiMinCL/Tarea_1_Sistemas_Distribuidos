@@ -224,12 +224,6 @@ func CreateReservation(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 	} else {
 
-		fmt.Println("Calculating Balances")
-		for i := 0; i < len(reserva.Passengers); i++ {
-			reserva.Passengers[i].Balances.AncillariesIda, reserva.Passengers[i].Balances.AncillariesVuelta = SumAncillaries(reserva.Passengers[i].Ancillaries)
-			reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(reserva.Vuelos)
-		}
-
 		fmt.Println("Creating Reservation")
 
 		// Call the CreateReservation function from the models package to create the new reservation
@@ -276,12 +270,6 @@ func UpdateReservation(c *gin.Context) {
 	// Reseting the pnr and surname
 	reserva.PNR = pnr
 	reserva.Apellido = apellido
-
-	//Calculating the new balances
-	for i := 0; i < len(reserva.Passengers); i++ {
-		reserva.Passengers[i].Balances.AncillariesIda, reserva.Passengers[i].Balances.AncillariesVuelta = SumAncillaries(reserva.Passengers[i].Ancillaries)
-		reserva.Passengers[i].Balances.VueloIda, reserva.Passengers[i].Balances.VueloVuelta = SumVuelos(reserva.Vuelos)
-	}
 
 	// Call the UpdateReservation function from the models package to remplace the reservation with a other one.
 	response, err := models.UpdateReservation(pnr, apellido, reserva)
@@ -383,9 +371,7 @@ func GetStatistics(c *gin.Context) {
 
 	for i := 0; i < len(reservas); i++ {
 		dateIda := reservas[i].Vuelos[0].Fecha
-		fmt.Println(dateIda)
 		mesIda, _ := time.Parse(layout, dateIda)
-		fmt.Println(fmt.Sprint(mesIda.Month()))
 
 		pasajerosMes[fmt.Sprint(mesIda.Month())] += len(reservas[i].Passengers)
 		for j := 0; j < len(reservas[i].Passengers); j++ {
@@ -403,8 +389,6 @@ func GetStatistics(c *gin.Context) {
 			}
 		}
 	}
-	fmt.Print(gananciaMes)
-	fmt.Print(pasajerosMes)
 
 	stats.PromedioPasajeros.Jan = GetAverage(gananciaMes["January"], pasajerosMes["January"])
 	stats.PromedioPasajeros.Feb = GetAverage(gananciaMes["February"], pasajerosMes["February"])
