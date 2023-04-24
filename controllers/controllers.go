@@ -12,12 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var(
-	AncillaryPrice = map[string]int{"BGH":10000, "BGR":30000, "STDF":5000, "PAXS":2000, "PTCR":40000, "AVIH":40000, "SPML":35000, "LNGE":15000, "WIFI":20000}
-	AncillaryName = map[string]string{"BGH":"Equipaje de mano", "BGR":"Equipaje de bodega", "STDF":"Asiento", "PAXS":"Embarque y Check In prioritario", "PTCR":"Mascota en cabina", "AVIH":"Mascota en bodega", "SPML":"Equipaje especial", "LNGE":"Acceso a Salon VIP", "WIFI":"Wi-Fi a bordo"}
+var (
+	AncillaryPrice = map[string]int{"BGH": 10000, "BGR": 30000, "STDF": 5000, "PAXS": 2000, "PTCR": 40000, "AVIH": 40000, "SPML": 35000, "LNGE": 15000, "WIFI": 20000}
+	AncillaryName  = map[string]string{"BGH": "Equipaje de mano", "BGR": "Equipaje de bodega", "STDF": "Asiento", "PAXS": "Embarque y Check In prioritario", "PTCR": "Mascota en cabina", "AVIH": "Mascota en bodega", "SPML": "Equipaje especial", "LNGE": "Acceso a Salon VIP", "WIFI": "Wi-Fi a bordo"}
 )
-
-
 
 // GetVuelo is a handler function that retrieves a flight based on its origin, destination and date of departure.
 func GetVuelos(c *gin.Context) {
@@ -210,7 +208,7 @@ func SumVuelos(flights []models.ReservationFlight) (int, int) {
 
 		tiempoVuelta = int(horaLlegadaVuelta.Sub(horaSalidaVuelta).Minutes())
 	} else if len(flights) > 2 {
-		fmt.Print("There shouldn't be more than tow flights per reservation")
+		fmt.Print("There shouldn't be more than two flights per reservation")
 	}
 
 	return tiempoIda * 590, tiempoVuelta * 590
@@ -314,10 +312,10 @@ func DeleteReservation(c *gin.Context) {
 	}
 }
 
-func Max(data map[string]int) string{
+func Max(data map[string]int) string {
 	var max int = 0
 	var maxIndex string
-	for i, v := range(data){
+	for i, v := range data {
 		if v > max {
 			maxIndex = i
 			max = v
@@ -326,10 +324,10 @@ func Max(data map[string]int) string{
 	return maxIndex
 }
 
-func Min(data map[string]int) string{
+func Min(data map[string]int) string {
 	var min int = 2000000000
 	var minIndex string
-	for i, v := range(data){
+	for i, v := range data {
 		if v < min {
 			minIndex = i
 			min = v
@@ -338,37 +336,37 @@ func Min(data map[string]int) string{
 	return minIndex
 }
 
-func GetStatistics(c *gin.Context){
-	var(
-		balancesVuelo = make(map[string]int)
+func GetStatistics(c *gin.Context) {
+	var (
+		balancesVuelo       = make(map[string]int)
 		balancesAncillaries = make(map[string]int)
-		stats models.Statistics
+		stats               models.Statistics
 	)
 	reservas, err := models.GetAllReservations()
 
-	if err != nil{
+	if err != nil {
 		fmt.Println(err)
 		c.AbortWithStatus(http.StatusInternalServerError)
 	}
 
-	for i := 0; i<len(reservas); i++{
-		for j := 0; j<len(reservas[i].Passengers); j++{
+	for i := 0; i < len(reservas); i++ {
+		for j := 0; j < len(reservas[i].Passengers); j++ {
 			balancesVuelo[reservas[i].Vuelos[0].NumeroVuelo] += reservas[i].Passengers[j].Balances.VueloIda
-			if len(reservas[i].Vuelos) == 2{
+			if len(reservas[i].Vuelos) == 2 {
 				balancesVuelo[reservas[i].Vuelos[1].NumeroVuelo] += reservas[i].Passengers[j].Balances.VueloVuelta
 			}
 
-			for k := 0; k<len(reservas[i].Passengers[j].Ancillaries.Ida); k++{
+			for k := 0; k < len(reservas[i].Passengers[j].Ancillaries.Ida); k++ {
 				balancesAncillaries[reservas[i].Passengers[j].Ancillaries.Ida[k].SSR] += reservas[i].Passengers[j].Balances.AncillariesIda
 			}
-			for k := 0; k<len(reservas[i].Passengers[j].Ancillaries.Vuelta); k++{
+			for k := 0; k < len(reservas[i].Passengers[j].Ancillaries.Vuelta); k++ {
 				balancesAncillaries[reservas[i].Passengers[j].Ancillaries.Vuelta[k].SSR] += reservas[i].Passengers[j].Balances.AncillariesVuelta
 			}
 		}
 	}
 	stats.RutaMayorGanancia = Max(balancesVuelo)
 	stats.RutaMenorGanancia = Min(balancesVuelo)
-	for i, v := range(AncillaryName){
+	for i, v := range AncillaryName {
 
 		var RankingAncillary models.AncillariesStatistics
 		RankingAncillary.Nombre = v
@@ -380,26 +378,26 @@ func GetStatistics(c *gin.Context){
 	layout := "02/01/2006"
 
 	//var months = [12]string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
-	var gananciaMes map[string]int = map[string]int{"January":0, "February":0, "March":0, "April":0, "May":0, "June":0, "July":0, "August":0, "September":0, "October":0, "November":0, "December":0}
-	var pasajerosMes map[string]int = map[string]int{"January":0, "February":0, "March":0, "April":0, "May":0, "June":0, "July":0, "August":0, "September":0, "October":0, "November":0, "December":0}
+	var gananciaMes map[string]int = map[string]int{"January": 0, "February": 0, "March": 0, "April": 0, "May": 0, "June": 0, "July": 0, "August": 0, "September": 0, "October": 0, "November": 0, "December": 0}
+	var pasajerosMes map[string]int = map[string]int{"January": 0, "February": 0, "March": 0, "April": 0, "May": 0, "June": 0, "July": 0, "August": 0, "September": 0, "October": 0, "November": 0, "December": 0}
 
-	for i := 0; i<len(reservas); i++{
+	for i := 0; i < len(reservas); i++ {
 		dateIda := reservas[i].Vuelos[0].Fecha
 		fmt.Println(dateIda)
 		mesIda, _ := time.Parse(layout, dateIda)
 		fmt.Println(fmt.Sprint(mesIda.Month()))
 
 		pasajerosMes[fmt.Sprint(mesIda.Month())] += len(reservas[i].Passengers)
-		for j := 0; j<len(reservas[i].Passengers); j++{
+		for j := 0; j < len(reservas[i].Passengers); j++ {
 			gananciaMes[fmt.Sprint(mesIda.Month())] += reservas[i].Passengers[j].Balances.VueloIda
 			gananciaMes[fmt.Sprint(mesIda.Month())] += reservas[i].Passengers[j].Balances.AncillariesIda
 		}
-		if len(reservas[i].Vuelos) == 2{
+		if len(reservas[i].Vuelos) == 2 {
 			dateVuelta := reservas[i].Vuelos[1].Fecha
 			mesVuelta, _ := time.Parse(layout, dateVuelta)
 			pasajerosMes[fmt.Sprint(mesVuelta.Month())] += len(reservas[i].Passengers)
 
-			for j := 0; j<len(reservas[i].Passengers); j++{
+			for j := 0; j < len(reservas[i].Passengers); j++ {
 				gananciaMes[fmt.Sprint(mesVuelta.Month())] += reservas[i].Passengers[j].Balances.VueloVuelta
 				gananciaMes[fmt.Sprint(mesVuelta.Month())] += reservas[i].Passengers[j].Balances.AncillariesVuelta
 			}
@@ -424,11 +422,10 @@ func GetStatistics(c *gin.Context){
 	c.IndentedJSON(http.StatusOK, stats)
 }
 
-
-func GetAverage(ganancia int, passenger int) int{
-	if (passenger == 0){
+func GetAverage(ganancia int, passenger int) int {
+	if passenger == 0 {
 		return 0
 	} else {
-		return int(ganancia/passenger)
+		return int(ganancia / passenger)
 	}
 }

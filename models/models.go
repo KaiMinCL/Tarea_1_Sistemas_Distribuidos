@@ -112,8 +112,8 @@ type PassengerAverage struct {
 }
 
 type Statistics struct {
-	RutaMayorGanancia  string                     `bson:"ruta_mayor_ganancia" json:"ruta_mayor_ganancia"`
-	RutaMenorGanancia  string                     `bson:"ruta_menor_ganancia" json:"ruta_menor_ganancia"`
+	RutaMayorGanancia  string                  `bson:"ruta_mayor_ganancia" json:"ruta_mayor_ganancia"`
+	RutaMenorGanancia  string                  `bson:"ruta_menor_ganancia" json:"ruta_menor_ganancia"`
 	RankingAncillaries []AncillariesStatistics `bson:"ranking_ancillaries" json:"ranking_ancillaries"`
 	PromedioPasajeros  PassengerAverage        `bson:"promedio_pasajeros" json:"promedio_pasajeros"`
 }
