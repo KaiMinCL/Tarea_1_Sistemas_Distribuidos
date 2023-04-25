@@ -176,7 +176,7 @@ func SumAncillaries(PA models.PassengerAncillaryList) (int, int) {
 	}
 	for j := 0; j < len(PA.Vuelta); j++ {
 		countVuelta += AncillaryPrice[PA.Vuelta[j].SSR] * PA.Vuelta[j].Cantidad
-		fmt.Println(countVuelta, PA.Vuelta[j].SSR, PA.Vuelta[j].Cantidad)
+		//fm.Println(countVuelta, PA.Vuelta[j].SSR, PA.Vuelta[j].Cantidad)t
 	}
 
 	return countIda, countVuelta
@@ -363,7 +363,6 @@ func GetStatistics(c *gin.Context) {
 
 	layout := "02/01/2006"
 
-	//var months = [12]string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
 	var gananciaMes map[string]int = map[string]int{"January": 0, "February": 0, "March": 0, "April": 0, "May": 0, "June": 0, "July": 0, "August": 0, "September": 0, "October": 0, "November": 0, "December": 0}
 	var pasajerosMes map[string]int = map[string]int{"January": 0, "February": 0, "March": 0, "April": 0, "May": 0, "June": 0, "July": 0, "August": 0, "September": 0, "October": 0, "November": 0, "December": 0}
 

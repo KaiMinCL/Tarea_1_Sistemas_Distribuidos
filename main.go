@@ -22,6 +22,7 @@ import (
 
 var (
 	AncillaryPrice = map[string]int{"BGH": 10000, "BGR": 30000, "STDF": 5000, "PAXS": 2000, "PTCR": 40000, "AVIH": 40000, "SPML": 35000, "LNGE": 15000, "WIFI": 20000}
+	meses          = []string{"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}
 )
 
 func waitAnimation() {
@@ -212,7 +213,7 @@ func main() {
 
 				var opcionIda int
 
-				fmt.Print("\nIngrese una Opción: ")
+				fmt.Print("Ingrese una Opción: ")
 				fmt.Scan(&opcionIda)
 
 				vueloIda := vuelos[opcionIda-1]
@@ -297,7 +298,7 @@ func main() {
 
 					var opcionVuelta int
 
-					fmt.Println("Ingrese una Opción: ")
+					fmt.Print("Ingrese una Opción: ")
 					fmt.Scan(&opcionVuelta)
 
 					vueloVuelta = vuelos[opcionVuelta-1]
@@ -312,7 +313,6 @@ func main() {
 						HoraLlegada: vueloVuelta.HoraLlegada,
 						Fecha:       fechaRegreso,
 					}
-
 
 					Reserva.Vuelos = append(Reserva.Vuelos, vueloReserva)
 				}
@@ -450,7 +450,7 @@ func main() {
 
 				Reserva.Passengers = Pasajeros
 				var PNRC models.PNRCapsule
-				resp, err = http.Get(URL+"/generatepnr")
+				resp, err = http.Get(URL + "/generatepnr")
 
 				if err != nil {
 					log.Fatal(err)
@@ -816,7 +816,7 @@ func main() {
 
 					var flightOption int
 
-					fmt.Print("\nIngrese una Opción: ")
+					fmt.Print("Ingrese una Opción: ")
 					fmt.Scan(&flightOption)
 					time.Sleep(25 * time.Millisecond)
 
@@ -1045,7 +1045,7 @@ func main() {
 						fmt.Println("\t2. Vuelta: " + reserva.Vuelos[1].NumeroVuelo + " " + reserva.Vuelos[1].HoraSalida + " - " + reserva.Vuelos[1].HoraLlegada)
 					}
 
-					fmt.Println("Ingrese una opción: ")
+					fmt.Print("Ingrese una opción: ")
 					fmt.Scan(&flightOption)
 
 					flightOption -= 1
@@ -1091,7 +1091,6 @@ func main() {
 						time.Sleep(50 * time.Millisecond)
 
 						fmt.Println("\t", reserva.Passengers[i].Name, reserva.Passengers[i].Edad)
-						fmt.Println("Ancillares ida:")
 
 						fmt.Print("\nIngrese los Ancillaries (separados por comas): ")
 
@@ -1109,73 +1108,45 @@ func main() {
 
 							seleccionAncillary.SSR = vuelos[0].Ancillaries[seleccionArray[j]].SSR
 
-							if vuelos[0].Ancillaries[seleccionArray[i]].Stock == 0 {
-								fmt.Println("No existe stock para el Ancillary: " + vuelos[0].Ancillaries[seleccionArray[i]].Nombre)
+							if vuelos[0].Ancillaries[seleccionArray[j]].Stock == 0 {
+								fmt.Println("No existe stock para el Ancillary: " + vuelos[0].Ancillaries[seleccionArray[j]].Nombre)
 								break
 							} else {
 								for k := 0; k <= len(reserva.Passengers[i].Ancillaries.Ida); k++ {
 
 									vuelos[0].Ancillaries[seleccionArray[j]].Stock -= 1
 
-									if k == len(reserva.Passengers[i].Ancillaries.Ida) {
-										seleccionAncillary.Cantidad = 1
-										reserva.Passengers[i].Ancillaries.Ida = append(reserva.Passengers[i].Ancillaries.Ida, seleccionAncillary)
-										reserva.Passengers[i].Balances.AncillariesIda += AncillaryPrice[reserva.Passengers[i].Ancillaries.Ida[k].SSR]
-										break
-									}
+									if flightOption == 0 {
+										if k == len(reserva.Passengers[i].Ancillaries.Ida) {
+											seleccionAncillary.Cantidad = 1
+											reserva.Passengers[i].Ancillaries.Ida = append(reserva.Passengers[i].Ancillaries.Ida, seleccionAncillary)
+											reserva.Passengers[i].Balances.AncillariesIda += AncillaryPrice[reserva.Passengers[i].Ancillaries.Ida[k].SSR]
+											break
+										}
 
-									if seleccionAncillary.SSR == reserva.Passengers[i].Ancillaries.Ida[k].SSR {
-										reserva.Passengers[i].Ancillaries.Ida[k].Cantidad += 1
-										reserva.Passengers[i].Balances.AncillariesIda += AncillaryPrice[reserva.Passengers[i].Ancillaries.Ida[k].SSR]
-										break
-									}
+										if seleccionAncillary.SSR == reserva.Passengers[i].Ancillaries.Ida[k].SSR {
+											reserva.Passengers[i].Ancillaries.Ida[k].Cantidad += 1
+											reserva.Passengers[i].Balances.AncillariesIda += AncillaryPrice[reserva.Passengers[i].Ancillaries.Ida[k].SSR]
+											break
+										}
 
-								}
-							}
-
-						}
-
-						if len(reserva.Vuelos) == 2 {
-
-							fmt.Println("\nAncillares vuelta:")
-
-							fmt.Print("\nIngrese los Ancillaries (separados por comas): ")
-
-							fmt.Scan(&seleccionAncillaries)
-
-							stringSlice = strings.Split(seleccionAncillaries, ",")
-							seleccionArray = make([]int, len(stringSlice))
-
-							for j, v := range stringSlice {
-								seleccionArray[j], err = strconv.Atoi(v)
-								seleccionArray[j] -= 1
-
-								var seleccionAncillary models.PassengerAncillary
-
-								seleccionAncillary.SSR = vuelos[0].Ancillaries[seleccionArray[j]].SSR
-
-								if vuelos[0].Ancillaries[seleccionArray[i]].Stock == 0 {
-									fmt.Println("No existe stock para el Ancillary: " + vuelos[0].Ancillaries[seleccionArray[i]].Nombre)
-									break
-								} else {
-									for k := 0; k <= len(reserva.Passengers[i].Ancillaries.Vuelta); k++ {
-
-										vuelos[0].Ancillaries[seleccionArray[j]].Stock -= 1
-
+									} else {
 										if k == len(reserva.Passengers[i].Ancillaries.Vuelta) {
 											seleccionAncillary.Cantidad = 1
-											reserva.Passengers[i].Ancillaries.Vuelta = append(reserva.Passengers[i].Ancillaries.Ida, seleccionAncillary)
+											reserva.Passengers[i].Ancillaries.Vuelta = append(reserva.Passengers[i].Ancillaries.Vuelta, seleccionAncillary)
+											reserva.Passengers[i].Balances.AncillariesVuelta += AncillaryPrice[reserva.Passengers[i].Ancillaries.Vuelta[k].SSR]
 											break
 										}
 
 										if seleccionAncillary.SSR == reserva.Passengers[i].Ancillaries.Vuelta[k].SSR {
 											reserva.Passengers[i].Ancillaries.Vuelta[k].Cantidad += 1
+											reserva.Passengers[i].Balances.AncillariesVuelta += AncillaryPrice[reserva.Passengers[i].Ancillaries.Vuelta[k].SSR]
 											break
 										}
 
 									}
-								}
 
+								}
 							}
 
 						}
@@ -1297,7 +1268,11 @@ func main() {
 				fmt.Println("\tGanancia:", ra.(map[string]interface{})["ganancia"], "\n")
 			}
 			fmt.Println("Promedio Pasajeros:")
-			for mes, valor := range data["promedio_pasajeros"].(map[string]interface{}) {
+			for _, mes := range meses {
+				valor, ok := data["promedio_pasajeros"].(map[string]interface{})[mes]
+				if !ok {
+					continue
+				}
 				time.Sleep(50 * time.Millisecond)
 				fmt.Println("\t", strings.Title(mes), ":", valor)
 			}
