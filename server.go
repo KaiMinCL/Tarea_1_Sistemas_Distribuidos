@@ -27,11 +27,14 @@ func main() {
 	router.PUT("/api/vuelo", controllers.UpdateVuelo)
 	router.DELETE("/api/vuelo", controllers.DeleteVuelo)
 	router.POST("/api/vuelo", controllers.CreateVuelo)
+
 	router.GET("/api/reserva", controllers.GetReservations)
 	router.PUT("/api/reserva", controllers.UpdateReservation)
 	router.DELETE("/api/reserva", controllers.DeleteReservation)
 	router.POST("/api/reserva", controllers.CreateReservation)
+
 	router.GET("/api/estadisticas", controllers.GetStatistics)
 
+	router.GET("/api/generatepnr", controllers.GenerateNewPNR)
 	router.Run(server + ":" + port)
 }

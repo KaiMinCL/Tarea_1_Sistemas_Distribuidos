@@ -191,7 +191,6 @@ func main() {
 
 				fmt.Println("Vuelos disponibles:")
 				fmt.Println("Ida:")
-
 				for i := 0; i < len(vuelos); i++ {
 					time.Sleep(50 * time.Millisecond)
 
@@ -272,6 +271,8 @@ func main() {
 
 					fmt.Println("Vuelta:")
 
+					var precioVuelo int
+
 					// print out the vuelos slice to verify that it was parsed correctly
 					for i := 0; i < len(vuelos); i++ {
 
@@ -288,7 +289,7 @@ func main() {
 
 						minutosVuelo := int(horaLlegada.Sub(horaSalida).Minutes())
 
-						precioVuelo := 590 * minutosVuelo
+						precioVuelo = 590 * minutosVuelo
 						fmt.Print("\t", i+1)
 						fmt.Print(". " + vuelos[i].NumeroVuelo + " " + vuelos[i].HoraSalida + " - " + vuelos[i].HoraLlegada + " $")
 						fmt.Print(precioVuelo, "\n")
@@ -311,6 +312,7 @@ func main() {
 						HoraLlegada: vueloVuelta.HoraLlegada,
 						Fecha:       fechaRegreso,
 					}
+
 
 					Reserva.Vuelos = append(Reserva.Vuelos, vueloReserva)
 				}
@@ -447,7 +449,28 @@ func main() {
 				}
 
 				Reserva.Passengers = Pasajeros
-				Reserva.PNR = controllers.GenerateNewPNR()
+				var NewPNR string
+				resp, err = http.Get(URL+"/generatepnr")
+
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer resp.Body.Close()
+
+				body, err = ioutil.ReadAll(resp.Body)
+				if err != nil {
+					fmt.Println("error:", err)
+					break
+				}
+
+				err = json.Unmarshal(body, &NewPNR)
+				if err != nil {
+					fmt.Println("Tenia un problema con la generacion de PNR")
+					break
+				}
+
+				Reserva.PNR = NewPNR
+
 				for i := 0; i < len(Reserva.Passengers); i++ {
 					Reserva.Passengers[i].Balances.AncillariesIda, Reserva.Passengers[i].Balances.AncillariesVuelta = controllers.SumAncillaries(Reserva.Passengers[i].Ancillaries)
 					Reserva.Passengers[i].Balances.VueloIda, Reserva.Passengers[i].Balances.VueloVuelta = controllers.SumVuelos(Reserva.Vuelos)
@@ -785,7 +808,7 @@ func main() {
 						}
 						minutosVuelo := int(horaLlegada.Sub(horaSalida).Minutes())
 
-						precioVuelo := 590*minutosVuelo + 20000
+						precioVuelo = 590*minutosVuelo + 20000
 						fmt.Print(i + 1)
 						fmt.Print(". " + vuelos[i].NumeroVuelo + " " + vuelos[i].HoraSalida + " - " + vuelos[i].HoraLlegada + " $")
 						fmt.Print(precioVuelo, "\n")

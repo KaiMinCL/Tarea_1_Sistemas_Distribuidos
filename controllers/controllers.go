@@ -103,17 +103,19 @@ func DeleteVuelo(c *gin.Context) {
 	}
 }
 
-func GenerateNewPNR() string {
+func GenerateNewPNR(c *gin.Context) {
+
+	fmt.Print("here2")
 	reservations, err := models.GetAllReservations()
 
 	if err != nil {
 		log.Fatal("Error in getting the reservations")
 	}
-
+	fmt.Print("here3")
 	if reservations == nil {
-		return convertToBase(rand.Intn(36*36*36*36*36*36), 36)
+		c.IndentedJSON(http.StatusOK, convertToBase(rand.Intn(36*36*36*36*36*36), 36))
 	}
-
+	fmt.Print("here4")
 	for true {
 		//The max number of pnr combinations is 36^6
 		// In this function we are generating a pnr then looking if we already have a
@@ -122,11 +124,13 @@ func GenerateNewPNR() string {
 		n := rand.Intn(36 * 36 * 36 * 36 * 36 * 36)
 		NewPnr := convertToBase(n, 36)
 		if elementInReservations(NewPnr, reservations) == 0 {
-			return NewPnr
+
+			c.IndentedJSON(http.StatusOK, NewPnr)
+			break
 		}
 	}
 
-	return "This return wil never be executed"
+	return
 }
 
 func elementInReservations(NewPNR string, reservations []models.Reservation) int {
