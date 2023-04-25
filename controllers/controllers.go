@@ -104,18 +104,10 @@ func DeleteVuelo(c *gin.Context) {
 }
 
 func GenerateNewPNR(c *gin.Context) {
-
-	fmt.Print("here2")
 	reservations, err := models.GetAllReservations()
-
 	if err != nil {
 		log.Fatal("Error in getting the reservations")
 	}
-	fmt.Print("here3")
-	if reservations == nil {
-		c.IndentedJSON(http.StatusOK, convertToBase(rand.Intn(36*36*36*36*36*36), 36))
-	}
-	fmt.Print("here4")
 	for true {
 		//The max number of pnr combinations is 36^6
 		// In this function we are generating a pnr then looking if we already have a
@@ -124,18 +116,20 @@ func GenerateNewPNR(c *gin.Context) {
 		n := rand.Intn(36 * 36 * 36 * 36 * 36 * 36)
 		NewPnr := convertToBase(n, 36)
 		if elementInReservations(NewPnr, reservations) == 0 {
-
-			c.IndentedJSON(http.StatusOK, NewPnr)
+			var PNRC models.PNRCapsule
+			PNRC.PNR = NewPnr
+			c.JSON(http.StatusOK, PNRC)
 			break
 		}
 	}
-
-	return
 }
 
 func elementInReservations(NewPNR string, reservations []models.Reservation) int {
 	//This function looks in a array of reservations if the inputed pnr is already present
 	// in an other reservation.
+	if reservations == nil {
+		return 0
+	}
 	for i := 0; i < len(reservations); i++ {
 		if reservations[i].PNR == NewPNR {
 			return 1

@@ -449,7 +449,7 @@ func main() {
 				}
 
 				Reserva.Passengers = Pasajeros
-				var NewPNR string
+				var PNRC models.PNRCapsule
 				resp, err = http.Get(URL+"/generatepnr")
 
 				if err != nil {
@@ -463,13 +463,13 @@ func main() {
 					break
 				}
 
-				err = json.Unmarshal(body, &NewPNR)
+				err = json.Unmarshal(body, &PNRC)
 				if err != nil {
-					fmt.Println("Tenia un problema con la generacion de PNR")
+					fmt.Println(err)
 					break
 				}
 
-				Reserva.PNR = NewPNR
+				Reserva.PNR = PNRC.PNR
 
 				for i := 0; i < len(Reserva.Passengers); i++ {
 					Reserva.Passengers[i].Balances.AncillariesIda, Reserva.Passengers[i].Balances.AncillariesVuelta = controllers.SumAncillaries(Reserva.Passengers[i].Ancillaries)

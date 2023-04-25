@@ -18,7 +18,8 @@ import (
 
 //STRUCT DEFINITIONS
 
-// Define the Plane struct, which represents an airplane model
+// Define the Plane struct, which represents an airplane mode/
+
 type Plane struct {
 	Modelo           string `bson:"modelo" json:"modelo"`
 	NumeroDeSerie    string `bson:"numero_de_serie" json:"numero_de_serie"`
@@ -116,6 +117,10 @@ type Statistics struct {
 	RutaMenorGanancia  string                  `bson:"ruta_menor_ganancia" json:"ruta_menor_ganancia"`
 	RankingAncillaries []AncillariesStatistics `bson:"ranking_ancillaries" json:"ranking_ancillaries"`
 	PromedioPasajeros  PassengerAverage        `bson:"promedio_pasajeros" json:"promedio_pasajeros"`
+}
+
+type PNRCapsule struct{
+	PNR string `bson:"PNR" json:"PNR"`
 }
 
 // Connect to MongoDB and retrieve the collection needed
