@@ -324,9 +324,9 @@ func Min(data map[string]int) string {
 
 func GetStatistics(c *gin.Context) {
 	var (
-		balancesVuelo       = make(map[string]int)
 		balancesAncillaries = make(map[string]int)
 		stats               models.Statistics
+		RutaGanancia = make(map[string]int)
 	)
 	reservas, err := models.GetAllReservations()
 
@@ -336,22 +336,29 @@ func GetStatistics(c *gin.Context) {
 	}
 
 	for i := 0; i < len(reservas); i++ {
+		RutaStringIda := reservas[i].Vuelos[0].Origen + " - " + reservas[i].Vuelos[0].Destino
+
 		for j := 0; j < len(reservas[i].Passengers); j++ {
-			balancesVuelo[reservas[i].Vuelos[0].NumeroVuelo] += reservas[i].Passengers[j].Balances.VueloIda
-			if len(reservas[i].Vuelos) == 2 {
-				balancesVuelo[reservas[i].Vuelos[1].NumeroVuelo] += reservas[i].Passengers[j].Balances.VueloVuelta
-			}
+			RutaGanancia[RutaStringIda] += reservas[i].Passengers[j].Balances.VueloIda
 
 			for k := 0; k < len(reservas[i].Passengers[j].Ancillaries.Ida); k++ {
 				balancesAncillaries[reservas[i].Passengers[j].Ancillaries.Ida[k].SSR] += reservas[i].Passengers[j].Balances.AncillariesIda
 			}
-			for k := 0; k < len(reservas[i].Passengers[j].Ancillaries.Vuelta); k++ {
-				balancesAncillaries[reservas[i].Passengers[j].Ancillaries.Vuelta[k].SSR] += reservas[i].Passengers[j].Balances.AncillariesVuelta
+
+			if len(reservas[i].Vuelos) == 2 {
+				RutaStringVuelta := reservas[i].Vuelos[1].Origen + " - " + reservas[i].Vuelos[1].Destino
+				RutaGanancia[RutaStringVuelta] += reservas[i].Passengers[j].Balances.VueloVuelta
+
+				for k := 0; k < len(reservas[i].Passengers[j].Ancillaries.Vuelta); k++ {
+					balancesAncillaries[reservas[i].Passengers[j].Ancillaries.Vuelta[k].SSR] += reservas[i].Passengers[j].Balances.AncillariesVuelta
+				}
 			}
+
 		}
+
 	}
-	stats.RutaMayorGanancia = Max(balancesVuelo)
-	stats.RutaMenorGanancia = Min(balancesVuelo)
+	stats.RutaMayorGanancia = Max(RutaGanancia)
+	stats.RutaMenorGanancia = Min(RutaGanancia)
 	for i, v := range AncillaryName {
 
 		var RankingAncillary models.AncillariesStatistics
@@ -363,50 +370,31 @@ func GetStatistics(c *gin.Context) {
 
 	layout := "02/01/2006"
 
-	var gananciaMes map[string]int = map[string]int{"January": 0, "February": 0, "March": 0, "April": 0, "May": 0, "June": 0, "July": 0, "August": 0, "September": 0, "October": 0, "November": 0, "December": 0}
 	var pasajerosMes map[string]int = map[string]int{"January": 0, "February": 0, "March": 0, "April": 0, "May": 0, "June": 0, "July": 0, "August": 0, "September": 0, "October": 0, "November": 0, "December": 0}
 
 	for i := 0; i < len(reservas); i++ {
 		dateIda := reservas[i].Vuelos[0].Fecha
 		mesIda, _ := time.Parse(layout, dateIda)
-
 		pasajerosMes[fmt.Sprint(mesIda.Month())] += len(reservas[i].Passengers)
-		for j := 0; j < len(reservas[i].Passengers); j++ {
-			gananciaMes[fmt.Sprint(mesIda.Month())] += reservas[i].Passengers[j].Balances.VueloIda
-			gananciaMes[fmt.Sprint(mesIda.Month())] += reservas[i].Passengers[j].Balances.AncillariesIda
-		}
 		if len(reservas[i].Vuelos) == 2 {
 			dateVuelta := reservas[i].Vuelos[1].Fecha
 			mesVuelta, _ := time.Parse(layout, dateVuelta)
 			pasajerosMes[fmt.Sprint(mesVuelta.Month())] += len(reservas[i].Passengers)
-
-			for j := 0; j < len(reservas[i].Passengers); j++ {
-				gananciaMes[fmt.Sprint(mesVuelta.Month())] += reservas[i].Passengers[j].Balances.VueloVuelta
-				gananciaMes[fmt.Sprint(mesVuelta.Month())] += reservas[i].Passengers[j].Balances.AncillariesVuelta
-			}
 		}
 	}
 
-	stats.PromedioPasajeros.Jan = GetAverage(gananciaMes["January"], pasajerosMes["January"])
-	stats.PromedioPasajeros.Feb = GetAverage(gananciaMes["February"], pasajerosMes["February"])
-	stats.PromedioPasajeros.Mar = GetAverage(gananciaMes["March"], pasajerosMes["March"])
-	stats.PromedioPasajeros.Apr = GetAverage(gananciaMes["April"], pasajerosMes["April"])
-	stats.PromedioPasajeros.May = GetAverage(gananciaMes["May"], pasajerosMes["May"])
-	stats.PromedioPasajeros.Jun = GetAverage(gananciaMes["June"], pasajerosMes["June"])
-	stats.PromedioPasajeros.Jul = GetAverage(gananciaMes["July"], pasajerosMes["July"])
-	stats.PromedioPasajeros.Aug = GetAverage(gananciaMes["August"], pasajerosMes["August"])
-	stats.PromedioPasajeros.Sep = GetAverage(gananciaMes["September"], pasajerosMes["September"])
-	stats.PromedioPasajeros.Oct = GetAverage(gananciaMes["October"], pasajerosMes["October"])
-	stats.PromedioPasajeros.Nov = GetAverage(gananciaMes["November"], pasajerosMes["November"])
-	stats.PromedioPasajeros.Dec = GetAverage(gananciaMes["December"], pasajerosMes["December"])
+	stats.PromedioPasajeros.Jan = pasajerosMes["January"]
+	stats.PromedioPasajeros.Feb = pasajerosMes["February"]
+	stats.PromedioPasajeros.Mar = pasajerosMes["March"]
+	stats.PromedioPasajeros.Apr = pasajerosMes["April"]
+	stats.PromedioPasajeros.May = pasajerosMes["May"]
+	stats.PromedioPasajeros.Jun = pasajerosMes["June"]
+	stats.PromedioPasajeros.Jul = pasajerosMes["July"]
+	stats.PromedioPasajeros.Aug = pasajerosMes["August"]
+	stats.PromedioPasajeros.Sep = pasajerosMes["September"]
+	stats.PromedioPasajeros.Oct = pasajerosMes["October"]
+	stats.PromedioPasajeros.Nov = pasajerosMes["November"]
+	stats.PromedioPasajeros.Dec = pasajerosMes["December"]
 
 	c.IndentedJSON(http.StatusOK, stats)
-}
-
-func GetAverage(ganancia int, passenger int) int {
-	if passenger == 0 {
-		return 0
-	} else {
-		return int(ganancia / passenger)
-	}
 }
