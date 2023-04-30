@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"bd_aerolinea/database"
 	"bd_aerolinea/models"
 	"fmt"
 	"log"
@@ -12,11 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	AncillaryPrice = map[string]int{"BGH": 10000, "BGR": 30000, "STDF": 5000, "PAXS": 2000, "PTCR": 40000, "AVIH": 40000, "SPML": 35000, "LNGE": 15000, "WIFI": 20000}
-	AncillaryName  = map[string]string{"BGH": "Equipaje de mano", "BGR": "Equipaje de bodega", "STDF": "Asiento", "PAXS": "Embarque y Check In prioritario", "PTCR": "Mascota en cabina", "AVIH": "Mascota en bodega", "SPML": "Equipaje especial", "LNGE": "Acceso a Salon VIP", "WIFI": "Wi-Fi a bordo"}
-)
-
 // GetVuelo is a handler function that retrieves a flight based on its origin, destination and date of departure.
 func GetVuelos(c *gin.Context) {
 
@@ -25,7 +21,7 @@ func GetVuelos(c *gin.Context) {
 	fechaVuelo := c.Query("fecha")
 
 	// Call the GetVuelo function from the models package to retrieve the flight
-	vuelos, err := models.GetVuelos(origenVuelo, destinoVuelo, fechaVuelo)
+	vuelos, err := database.GetVuelos(origenVuelo, destinoVuelo, fechaVuelo)
 
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
@@ -48,7 +44,7 @@ func CreateVuelo(c *gin.Context) {
 	} else {
 
 		// Call the CreateVuelo function from the models package to create the new flight
-		models.CreateVuelo(vuelo)
+		database.CreateVuelo(vuelo)
 	}
 }
 
@@ -74,7 +70,7 @@ func UpdateVuelo(c *gin.Context) {
 	}
 
 	// Call the UpdateStockPasajeros function from the models package to update the flight's passenger stock
-	response, err := models.UpdateVuelo(numeroVuelo, origenVuelo, destinoVuelo, fechaVuelo, update.StockDePasajeros)
+	response, err := database.UpdateVuelo(numeroVuelo, origenVuelo, destinoVuelo, fechaVuelo, update.StockDePasajeros)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -94,7 +90,7 @@ func DeleteVuelo(c *gin.Context) {
 	fechaVuelo := c.Query("fecha")
 
 	// Call the DeleteVuelo function from the models package to delete the flight with the given parameters
-	err := models.DeleteVuelo(numeroVuelo, origenVuelo, destinoVuelo, fechaVuelo)
+	err := database.DeleteVuelo(numeroVuelo, origenVuelo, destinoVuelo, fechaVuelo)
 
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
@@ -103,8 +99,195 @@ func DeleteVuelo(c *gin.Context) {
 	}
 }
 
+func CreateReservation(c *gin.Context) {
+
+	var reserva models.Reservation
+
+	// Bind the request body to the reserva variable
+	if err := c.BindJSON(&reserva); err != nil {
+		fmt.Println(err)
+		c.AbortWithStatus(http.StatusBadRequest)
+	} else {
+
+		fmt.Println("Creating Reservation")
+
+		// Call the CreateReservation function from the models package to create the new reservation
+		response, err := database.CreateReservation(reserva)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+		}
+		c.IndentedJSON(http.StatusOK, response)
+	}
+}
+
+func GetReservations(c *gin.Context) {
+
+	// Retrieve the reservation information (pnr, apellido) from the query parameters
+	pnr := c.Query("pnr")
+	apellido := c.Query("apellido")
+
+	// Call the GetReservation func to get the said reservation using the parameters
+	reserva, err := database.GetReservation(pnr, apellido)
+
+	if err != nil {
+		fmt.Println(err)
+
+		c.IndentedJSON(http.StatusNotFound, strings.TrimSuffix(fmt.Sprintln(err), "\n"))
+
+	} else {
+		c.IndentedJSON(http.StatusOK, gin.H{"vuelos": reserva.Vuelos, "pasajeros": reserva.Passengers})
+	}
+}
+
+func UpdateReservation(c *gin.Context) {
+
+	// Retrieve the reservation information (pnr, apellido) from the query parameters
+	pnr := c.Query("pnr")
+	apellido := c.Query("apellido")
+
+	var reserva models.Reservation
+
+	err := c.BindJSON(&reserva)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	// Reseting the pnr and surname
+	reserva.PNR = pnr
+	reserva.Apellido = apellido
+
+	// Call the UpdateReservation function from the models package to remplace the reservation with a other one.
+	response, err := database.UpdateReservation(pnr, apellido, reserva)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
+
+}
+
+func DeleteReservation(c *gin.Context) {
+	// Retrieve the reservation information (pnr, apellido) from the query parameters
+	pnr := c.Query("pnr")
+	apellido := c.Query("apellido")
+
+	// Call the DeleteReservation function from the models package to delete the reservation with the given parameters
+	err := database.DeleteReservation(pnr, apellido)
+
+	if err != nil {
+		fmt.Println(err)
+
+		c.AbortWithStatus(http.StatusNotFound)
+	} else {
+		c.Status(http.StatusNoContent)
+	}
+}
+
+func Max(data map[string]int) string {
+	var max int = 0
+	var maxIndex string
+	for i, v := range data {
+		if v > max {
+			maxIndex = i
+			max = v
+		}
+	}
+	return maxIndex
+}
+
+func Min(data map[string]int) string {
+	var min int = 2000000000
+	var minIndex string
+	for i, v := range data {
+		if v < min {
+			minIndex = i
+			min = v
+		}
+	}
+	return minIndex
+}
+
+func GetStatistics(c *gin.Context) {
+	var (
+		balancesAncillaries = make(map[string]int)
+		stats               models.Statistics
+		RutaGanancia        = make(map[string]int)
+	)
+	reservas, err := database.GetAllReservations()
+
+	if err != nil {
+		fmt.Println(err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+	}
+
+	for i := 0; i < len(reservas); i++ {
+		RutaStringIda := reservas[i].Vuelos[0].Origen + " - " + reservas[i].Vuelos[0].Destino
+
+		for j := 0; j < len(reservas[i].Passengers); j++ {
+			RutaGanancia[RutaStringIda] += reservas[i].Passengers[j].Balances.VueloIda
+
+			for k := 0; k < len(reservas[i].Passengers[j].Ancillaries.Ida); k++ {
+				balancesAncillaries[reservas[i].Passengers[j].Ancillaries.Ida[k].SSR] += reservas[i].Passengers[j].Balances.AncillariesIda
+			}
+
+			if len(reservas[i].Vuelos) == 2 {
+				RutaStringVuelta := reservas[i].Vuelos[1].Origen + " - " + reservas[i].Vuelos[1].Destino
+				RutaGanancia[RutaStringVuelta] += reservas[i].Passengers[j].Balances.VueloVuelta
+
+				for k := 0; k < len(reservas[i].Passengers[j].Ancillaries.Vuelta); k++ {
+					balancesAncillaries[reservas[i].Passengers[j].Ancillaries.Vuelta[k].SSR] += reservas[i].Passengers[j].Balances.AncillariesVuelta
+				}
+			}
+
+		}
+
+	}
+	stats.RutaMayorGanancia = Max(RutaGanancia)
+	stats.RutaMenorGanancia = Min(RutaGanancia)
+	for i, v := range models.AncillaryName {
+
+		var RankingAncillary models.AncillariesStatistics
+		RankingAncillary.Nombre = v
+		RankingAncillary.SSR = i
+		RankingAncillary.Ganancia = balancesAncillaries[i]
+		stats.RankingAncillaries = append(stats.RankingAncillaries, RankingAncillary)
+	}
+
+	layout := "02/01/2006"
+
+	var pasajerosMes map[string]int = map[string]int{"January": 0, "February": 0, "March": 0, "April": 0, "May": 0, "June": 0, "July": 0, "August": 0, "September": 0, "October": 0, "November": 0, "December": 0}
+
+	for i := 0; i < len(reservas); i++ {
+		dateIda := reservas[i].Vuelos[0].Fecha
+		mesIda, _ := time.Parse(layout, dateIda)
+		pasajerosMes[fmt.Sprint(mesIda.Month())] += len(reservas[i].Passengers)
+		if len(reservas[i].Vuelos) == 2 {
+			dateVuelta := reservas[i].Vuelos[1].Fecha
+			mesVuelta, _ := time.Parse(layout, dateVuelta)
+			pasajerosMes[fmt.Sprint(mesVuelta.Month())] += len(reservas[i].Passengers)
+		}
+	}
+
+	stats.PromedioPasajeros.Jan = pasajerosMes["January"]
+	stats.PromedioPasajeros.Feb = pasajerosMes["February"]
+	stats.PromedioPasajeros.Mar = pasajerosMes["March"]
+	stats.PromedioPasajeros.Apr = pasajerosMes["April"]
+	stats.PromedioPasajeros.May = pasajerosMes["May"]
+	stats.PromedioPasajeros.Jun = pasajerosMes["June"]
+	stats.PromedioPasajeros.Jul = pasajerosMes["July"]
+	stats.PromedioPasajeros.Aug = pasajerosMes["August"]
+	stats.PromedioPasajeros.Sep = pasajerosMes["September"]
+	stats.PromedioPasajeros.Oct = pasajerosMes["October"]
+	stats.PromedioPasajeros.Nov = pasajerosMes["November"]
+	stats.PromedioPasajeros.Dec = pasajerosMes["December"]
+
+	c.IndentedJSON(http.StatusOK, stats)
+}
+
 func GenerateNewPNR(c *gin.Context) {
-	reservations, err := models.GetAllReservations()
+	reservations, err := database.GetAllReservations()
 	if err != nil {
 		log.Fatal("Error in getting the reservations")
 	}
@@ -165,236 +348,4 @@ func reverse(a []string) {
 	for i, j := 0, len(a)-1; i < j; i, j = i+1, j-1 {
 		a[i], a[j] = a[j], a[i]
 	}
-}
-
-func SumAncillaries(PA models.PassengerAncillaryList) (int, int) {
-	//This function calculates the price for the ancillaries associated with this passenger.
-	countIda := 0
-	countVuelta := 0
-	for j := 0; j < len(PA.Ida); j++ {
-		countIda += AncillaryPrice[PA.Ida[j].SSR] * PA.Ida[j].Cantidad
-	}
-	for j := 0; j < len(PA.Vuelta); j++ {
-		countVuelta += AncillaryPrice[PA.Vuelta[j].SSR] * PA.Vuelta[j].Cantidad
-		//fm.Println(countVuelta, PA.Vuelta[j].SSR, PA.Vuelta[j].Cantidad)t
-	}
-
-	return countIda, countVuelta
-}
-
-func SumVuelos(flights []models.ReservationFlight) (int, int) {
-	//This function returns the sum of the price of all the tickets associated with this passenger.
-	var tiempoIda int = 0
-	var tiempoVuelta int = 0
-
-	horaSalidaIda, _ := time.Parse("15:04", flights[0].HoraSalida)
-	horaLlegadaIda, _ := time.Parse("15:04", flights[0].HoraLlegada)
-
-	if horaLlegadaIda.Before(horaSalidaIda) {
-		horaLlegadaIda = horaLlegadaIda.Add(24 * time.Hour)
-	}
-
-	tiempoIda = int(horaLlegadaIda.Sub(horaSalidaIda).Minutes())
-
-	if len(flights) == 2 {
-		horaSalidaVuelta, _ := time.Parse("15:04", flights[1].HoraSalida)
-		horaLlegadaVuelta, _ := time.Parse("15:04", flights[1].HoraLlegada)
-
-		if horaLlegadaVuelta.Before(horaSalidaVuelta) {
-			horaLlegadaVuelta = horaLlegadaVuelta.Add(24 * time.Hour)
-		}
-
-		tiempoVuelta = int(horaLlegadaVuelta.Sub(horaSalidaVuelta).Minutes())
-	} else if len(flights) > 2 {
-		fmt.Print("There shouldn't be more than two flights per reservation")
-	}
-
-	return tiempoIda * 590, tiempoVuelta * 590
-}
-
-func CreateReservation(c *gin.Context) {
-
-	var reserva models.Reservation
-
-	// Bind the request body to the reserva variable
-	if err := c.BindJSON(&reserva); err != nil {
-		fmt.Println(err)
-		c.AbortWithStatus(http.StatusBadRequest)
-	} else {
-
-		fmt.Println("Creating Reservation")
-
-		// Call the CreateReservation function from the models package to create the new reservation
-		response, err := models.CreateReservation(reserva)
-		if err != nil {
-			c.AbortWithStatus(http.StatusInternalServerError)
-		}
-		c.IndentedJSON(http.StatusOK, response)
-	}
-}
-
-func GetReservations(c *gin.Context) {
-
-	// Retrieve the reservation information (pnr, apellido) from the query parameters
-	pnr := c.Query("pnr")
-	apellido := c.Query("apellido")
-
-	// Call the GetReservation func to get the said reservation using the parameters
-	reserva, err := models.GetReservation(pnr, apellido)
-
-	if err != nil {
-		fmt.Println(err)
-
-		c.IndentedJSON(http.StatusNotFound, strings.TrimSuffix(fmt.Sprintln(err), "\n"))
-
-	} else {
-		c.IndentedJSON(http.StatusOK, gin.H{"vuelos": reserva.Vuelos, "pasajeros": reserva.Passengers})
-	}
-}
-
-func UpdateReservation(c *gin.Context) {
-
-	// Retrieve the reservation information (pnr, apellido) from the query parameters
-	pnr := c.Query("pnr")
-	apellido := c.Query("apellido")
-
-	var reserva models.Reservation
-
-	err := c.BindJSON(&reserva)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	// Reseting the pnr and surname
-	reserva.PNR = pnr
-	reserva.Apellido = apellido
-
-	// Call the UpdateReservation function from the models package to remplace the reservation with a other one.
-	response, err := models.UpdateReservation(pnr, apellido, reserva)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, response)
-
-}
-
-func DeleteReservation(c *gin.Context) {
-	// Retrieve the reservation information (pnr, apellido) from the query parameters
-	pnr := c.Query("pnr")
-	apellido := c.Query("apellido")
-
-	// Call the DeleteReservation function from the models package to delete the reservation with the given parameters
-	err := models.DeleteReservation(pnr, apellido)
-
-	if err != nil {
-		fmt.Println(err)
-
-		c.AbortWithStatus(http.StatusNotFound)
-	} else {
-		c.Status(http.StatusNoContent)
-	}
-}
-
-func Max(data map[string]int) string {
-	var max int = 0
-	var maxIndex string
-	for i, v := range data {
-		if v > max {
-			maxIndex = i
-			max = v
-		}
-	}
-	return maxIndex
-}
-
-func Min(data map[string]int) string {
-	var min int = 2000000000
-	var minIndex string
-	for i, v := range data {
-		if v < min {
-			minIndex = i
-			min = v
-		}
-	}
-	return minIndex
-}
-
-func GetStatistics(c *gin.Context) {
-	var (
-		balancesAncillaries = make(map[string]int)
-		stats               models.Statistics
-		RutaGanancia = make(map[string]int)
-	)
-	reservas, err := models.GetAllReservations()
-
-	if err != nil {
-		fmt.Println(err)
-		c.AbortWithStatus(http.StatusInternalServerError)
-	}
-
-	for i := 0; i < len(reservas); i++ {
-		RutaStringIda := reservas[i].Vuelos[0].Origen + " - " + reservas[i].Vuelos[0].Destino
-
-		for j := 0; j < len(reservas[i].Passengers); j++ {
-			RutaGanancia[RutaStringIda] += reservas[i].Passengers[j].Balances.VueloIda
-
-			for k := 0; k < len(reservas[i].Passengers[j].Ancillaries.Ida); k++ {
-				balancesAncillaries[reservas[i].Passengers[j].Ancillaries.Ida[k].SSR] += reservas[i].Passengers[j].Balances.AncillariesIda
-			}
-
-			if len(reservas[i].Vuelos) == 2 {
-				RutaStringVuelta := reservas[i].Vuelos[1].Origen + " - " + reservas[i].Vuelos[1].Destino
-				RutaGanancia[RutaStringVuelta] += reservas[i].Passengers[j].Balances.VueloVuelta
-
-				for k := 0; k < len(reservas[i].Passengers[j].Ancillaries.Vuelta); k++ {
-					balancesAncillaries[reservas[i].Passengers[j].Ancillaries.Vuelta[k].SSR] += reservas[i].Passengers[j].Balances.AncillariesVuelta
-				}
-			}
-
-		}
-
-	}
-	stats.RutaMayorGanancia = Max(RutaGanancia)
-	stats.RutaMenorGanancia = Min(RutaGanancia)
-	for i, v := range AncillaryName {
-
-		var RankingAncillary models.AncillariesStatistics
-		RankingAncillary.Nombre = v
-		RankingAncillary.SSR = i
-		RankingAncillary.Ganancia = balancesAncillaries[i]
-		stats.RankingAncillaries = append(stats.RankingAncillaries, RankingAncillary)
-	}
-
-	layout := "02/01/2006"
-
-	var pasajerosMes map[string]int = map[string]int{"January": 0, "February": 0, "March": 0, "April": 0, "May": 0, "June": 0, "July": 0, "August": 0, "September": 0, "October": 0, "November": 0, "December": 0}
-
-	for i := 0; i < len(reservas); i++ {
-		dateIda := reservas[i].Vuelos[0].Fecha
-		mesIda, _ := time.Parse(layout, dateIda)
-		pasajerosMes[fmt.Sprint(mesIda.Month())] += len(reservas[i].Passengers)
-		if len(reservas[i].Vuelos) == 2 {
-			dateVuelta := reservas[i].Vuelos[1].Fecha
-			mesVuelta, _ := time.Parse(layout, dateVuelta)
-			pasajerosMes[fmt.Sprint(mesVuelta.Month())] += len(reservas[i].Passengers)
-		}
-	}
-
-	stats.PromedioPasajeros.Jan = pasajerosMes["January"]
-	stats.PromedioPasajeros.Feb = pasajerosMes["February"]
-	stats.PromedioPasajeros.Mar = pasajerosMes["March"]
-	stats.PromedioPasajeros.Apr = pasajerosMes["April"]
-	stats.PromedioPasajeros.May = pasajerosMes["May"]
-	stats.PromedioPasajeros.Jun = pasajerosMes["June"]
-	stats.PromedioPasajeros.Jul = pasajerosMes["July"]
-	stats.PromedioPasajeros.Aug = pasajerosMes["August"]
-	stats.PromedioPasajeros.Sep = pasajerosMes["September"]
-	stats.PromedioPasajeros.Oct = pasajerosMes["October"]
-	stats.PromedioPasajeros.Nov = pasajerosMes["November"]
-	stats.PromedioPasajeros.Dec = pasajerosMes["December"]
-
-	c.IndentedJSON(http.StatusOK, stats)
 }
